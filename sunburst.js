@@ -426,7 +426,7 @@ class CosmicSunburst extends HTMLElement {
     }, 2200);
   }
 
-  _applyTheme(themeId) {
+  _applyTheme(themeId, isInitial = false) {
     const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
     this._currentThemeObj = theme;
 
@@ -437,14 +437,79 @@ class CosmicSunburst extends HTMLElement {
     const stopStart = this.shadowRoot.getElementById("rayStopStart");
     const stopMid = this.shadowRoot.getElementById("rayStopMid");
     const stopEnd = this.shadowRoot.getElementById("rayStopEnd");
-    if (stopStart) stopStart.setAttribute("stop-color", theme.stops.rayStart);
-    if (stopMid) stopMid.setAttribute("stop-color", theme.stops.rayMid);
-    if (stopEnd) stopEnd.setAttribute("stop-color", theme.stops.rayEnd);
+    const dots = this.shadowRoot.querySelectorAll(".burst-dot");
 
-    this.shadowRoot.querySelectorAll(".burst-dot").forEach(d => {
-      d.style.fill = theme.dotColor;
-    });
+    if (isInitial || !this._currentRenderedStops) {
+      this._currentRenderedStops = {
+        rayStart: theme.stops.rayStart,
+        rayMid: theme.stops.rayMid,
+        rayEnd: theme.stops.rayEnd,
+        dotColor: theme.dotColor
+      };
+      if (stopStart) stopStart.setAttribute("stop-color", theme.stops.rayStart);
+      if (stopMid) stopMid.setAttribute("stop-color", theme.stops.rayMid);
+      if (stopEnd) stopEnd.setAttribute("stop-color", theme.stops.rayEnd);
+      dots.forEach(d => { d.style.fill = theme.dotColor; });
+      this.dispatchEvent(new CustomEvent("themechange", { detail: { theme: theme.id, name: theme.name } }));
+      return;
+    }
 
+    if (this._themeAnimFrame) cancelAnimationFrame(this._themeAnimFrame);
+
+    const parseColor = (str) => {
+      if (!str) return [255, 255, 255, 1];
+      str = str.trim();
+      if (str.startsWith("#")) {
+        let hex = str.slice(1);
+        if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+        const num = parseInt(hex, 16);
+        return [(num >> 16) & 255, (num >> 8) & 255, num & 255, 1];
+      }
+      const m = str.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\)/);
+      if (m) return [parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3]), m[4] !== undefined ? parseFloat(m[4]) : 1];
+      return [255, 255, 255, 1];
+    };
+
+    const formatColor = (c) => `rgba(${Math.round(c[0])}, ${Math.round(c[1])}, ${Math.round(c[2])}, ${c[3].toFixed(3)})`;
+    const lerpColor = (c1, c2, t) => [c1[0] + (c2[0] - c1[0]) * t, c1[1] + (c2[1] - c1[1]) * t, c1[2] + (c2[2] - c1[2]) * t, c1[3] + (c2[3] - c1[3]) * t];
+
+    const fromStart = parseColor(this._currentRenderedStops.rayStart);
+    const toStart = parseColor(theme.stops.rayStart);
+    const fromMid = parseColor(this._currentRenderedStops.rayMid);
+    const toMid = parseColor(theme.stops.rayMid);
+    const fromEnd = parseColor(this._currentRenderedStops.rayEnd);
+    const toEnd = parseColor(theme.stops.rayEnd);
+    const fromDot = parseColor(this._currentRenderedStops.dotColor);
+    const toDot = parseColor(theme.dotColor);
+
+    const startTime = performance.now();
+    const duration = 650;
+
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const ease = 0.5 - 0.5 * Math.cos(progress * Math.PI);
+
+      if (stopStart) stopStart.setAttribute("stop-color", formatColor(lerpColor(fromStart, toStart, ease)));
+      if (stopMid) stopMid.setAttribute("stop-color", formatColor(lerpColor(fromMid, toMid, ease)));
+      if (stopEnd) stopEnd.setAttribute("stop-color", formatColor(lerpColor(fromEnd, toEnd, ease)));
+      const dotC = formatColor(lerpColor(fromDot, toDot, ease));
+      dots.forEach(d => { d.style.fill = dotC; });
+
+      if (progress < 1) {
+        this._themeAnimFrame = requestAnimationFrame(step);
+      } else {
+        this._currentRenderedStops = {
+          rayStart: theme.stops.rayStart,
+          rayMid: theme.stops.rayMid,
+          rayEnd: theme.stops.rayEnd,
+          dotColor: theme.dotColor
+        };
+        this._themeAnimFrame = null;
+      }
+    };
+
+    this._themeAnimFrame = requestAnimationFrame(step);
     this.dispatchEvent(new CustomEvent("themechange", { detail: { theme: theme.id, name: theme.name } }));
   }
 

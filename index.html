@@ -264,16 +264,17 @@
       inset: 0;
       width: 100%;
       height: 100%;
-      z-index: -1;
       pointer-events: none;
-      transition: opacity var(--transition-duration) var(--ease-smooth);
+      transition: opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     #bgLayerA {
+      z-index: -2;
       opacity: 1;
     }
 
     #bgLayerB {
+      z-index: -1;
       opacity: 0;
     }
 
@@ -532,24 +533,11 @@
       cursor: pointer;
     }
 
-    /* Click ripple wave */
+    /* Subtle click pulse on ambient backdrop only (no ray or dot flash) */
     .visual-panel.pulse-active .glow-backdrop {
-      transform: translateX(-50%) scale(1.22);
-      opacity: 1;
-    }
-    .visual-panel.pulse-active .burst-ray {
-      filter: drop-shadow(0 0 5px var(--divider-glow));
-    }
-    .visual-panel.pulse-active .burst-dot {
-      transform: scale(1.4);
-    }
-
-    /* Theme switching ripple wave */
-    .sunburst-svg.theme-switching .burst-ray {
-      filter: drop-shadow(0 0 6px var(--divider-glow));
-    }
-    .sunburst-svg.theme-switching .burst-dot {
-      transform: scale(1.35);
+      transform: translateX(-50%) scale(1.08);
+      opacity: 0.85;
+      transition: transform 0.4s ease, opacity 0.4s ease;
     }
 
     /* Icon 360 spin animation */
@@ -1156,6 +1144,7 @@
         desc: "Indigo and soft twilight",
         bgGradient: "linear-gradient(175deg, #f1f5fa 0%, #e3ebf6 50%, #d5e2f1 100%)",
         swatch: "linear-gradient(135deg, #f1f5fa, #312e81)",
+        dotColor: "#1e1b4b",
         stops: {
           rayStart: "#312e81",
           rayMid: "#3b82f6",
@@ -1175,6 +1164,7 @@
         desc: "Morning rose & lavender",
         bgGradient: "linear-gradient(175deg, #fdf2f4 0%, #f6e2ed 50%, #ede0f5 100%)",
         swatch: "linear-gradient(135deg, #3b82f6, #ec4899)",
+        dotColor: "#ec4899",
         stops: {
           rayStart: "#3b82f6",
           rayMid: "#a855f7",
@@ -1197,6 +1187,7 @@
         desc: "Crisp blue daylight",
         bgGradient: "linear-gradient(175deg, #f0f7fe 0%, #def0fc 50%, #cbe6fa 100%)",
         swatch: "linear-gradient(135deg, #ffffff, #0284c7)",
+        dotColor: "#0284c7",
         stops: {
           rayStart: "#e0f2fe",
           rayMid: "#0284c7",
@@ -1223,6 +1214,7 @@
         desc: "Twilight purple & embers",
         bgGradient: "linear-gradient(175deg, #1c112b 0%, #2a153b 50%, #3b1945 100%)",
         swatch: "linear-gradient(135deg, #ff6800, #d946ef)",
+        dotColor: "#ff6800",
         stops: {
           rayStart: "#f97316",
           rayMid: "#d946ef",
@@ -1245,6 +1237,7 @@
         desc: "Midnight sky & starlight",
         bgGradient: "linear-gradient(175deg, #080d1e 0%, #0e1633 50%, #152048 100%)",
         swatch: "linear-gradient(135deg, #ffffff, #60a5fa)",
+        dotColor: "#60a5fa",
         stops: {
           rayStart: "#ffffff",
           rayMid: "#bfdbfe",
@@ -1266,6 +1259,7 @@
         desc: "Warm cream & vibrant aurora",
         bgGradient: "linear-gradient(175deg, #faf6f0 0%, #f3ece2 50%, #ebdcd0 100%)",
         swatch: "linear-gradient(135deg, #f43f5e, #9333ea, #ea580c)",
+        dotColor: "#f43f5e",
         stops: {
           rayStart: "#f43f5e",
           rayMid: "#9333ea",
@@ -1473,6 +1467,135 @@
       bgA.style.background = initialTheme.bgGradient;
       bgA.style.opacity = "1";
       bgB.style.opacity = "0";
+      activeBgLayer = "A";
+    }
+
+    /* ==========================================================================
+       SMOOTH THEME COLOR MORPHING ENGINE (ZERO FLICKER, ZERO JUMP)
+       ========================================================================== */
+    function parseColor(str) {
+      if (!str) return [255, 255, 255, 1];
+      str = str.trim();
+      if (str.startsWith("#")) {
+        let hex = str.slice(1);
+        if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+        const num = parseInt(hex, 16);
+        return [(num >> 16) & 255, (num >> 8) & 255, num & 255, 1];
+      }
+      const match = str.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\)/);
+      if (match) {
+        return [
+          parseFloat(match[1]),
+          parseFloat(match[2]),
+          parseFloat(match[3]),
+          match[4] !== undefined ? parseFloat(match[4]) : 1
+        ];
+      }
+      return [255, 255, 255, 1];
+    }
+
+    function formatColor(rgba) {
+      return `rgba(${Math.round(rgba[0])}, ${Math.round(rgba[1])}, ${Math.round(rgba[2])}, ${rgba[3].toFixed(3)})`;
+    }
+
+    function lerpColor(c1, c2, t) {
+      return [
+        c1[0] + (c2[0] - c1[0]) * t,
+        c1[1] + (c2[1] - c1[1]) * t,
+        c1[2] + (c2[2] - c1[2]) * t,
+        c1[3] + (c2[3] - c1[3]) * t
+      ];
+    }
+
+    let activeThemeAnimFrame = null;
+    let currentRenderedStops = null;
+
+    function transitionThemeColors(targetStops, targetDotColor, duration = 650, isInitial = false) {
+      if (activeThemeAnimFrame) {
+        cancelAnimationFrame(activeThemeAnimFrame);
+        activeThemeAnimFrame = null;
+      }
+
+      const rayStartEl = document.getElementById("rayStopStart");
+      const rayMidEl = document.getElementById("rayStopMid");
+      const rayEndEl = document.getElementById("rayStopEnd");
+      const glowCoreEl = document.getElementById("glowStopCore");
+      const glowMidEl = document.getElementById("glowStopMid");
+      const glowOuterEl = document.getElementById("glowStopOuter");
+      const dots = document.querySelectorAll(".burst-dot");
+
+      if (isInitial || !currentRenderedStops) {
+        currentRenderedStops = {
+          rayStart: targetStops.rayStart,
+          rayMid: targetStops.rayMid,
+          rayEnd: targetStops.rayEnd,
+          glowCore: targetStops.glowCore,
+          glowMid: targetStops.glowMid,
+          dotColor: targetDotColor
+        };
+        if (rayStartEl) rayStartEl.setAttribute("stop-color", targetStops.rayStart);
+        if (rayMidEl) rayMidEl.setAttribute("stop-color", targetStops.rayMid);
+        if (rayEndEl) rayEndEl.setAttribute("stop-color", targetStops.rayEnd);
+        if (glowCoreEl) glowCoreEl.setAttribute("stop-color", targetStops.glowCore);
+        if (glowMidEl) glowMidEl.setAttribute("stop-color", targetStops.glowMid);
+        if (glowOuterEl) glowOuterEl.setAttribute("stop-color", targetStops.glowCore);
+        dots.forEach(d => { d.style.fill = targetDotColor; });
+        return;
+      }
+
+      const fromStart = parseColor(currentRenderedStops.rayStart);
+      const toStart = parseColor(targetStops.rayStart);
+      const fromMid = parseColor(currentRenderedStops.rayMid);
+      const toMid = parseColor(targetStops.rayMid);
+      const fromEnd = parseColor(currentRenderedStops.rayEnd);
+      const toEnd = parseColor(targetStops.rayEnd);
+      const fromCore = parseColor(currentRenderedStops.glowCore);
+      const toCore = parseColor(targetStops.glowCore);
+      const fromGlowMid = parseColor(currentRenderedStops.glowMid);
+      const toGlowMid = parseColor(targetStops.glowMid);
+      const fromDot = parseColor(currentRenderedStops.dotColor);
+      const toDot = parseColor(targetDotColor);
+
+      const startTime = performance.now();
+
+      function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        // Smooth sine/cosine ease-in-out
+        const ease = 0.5 - 0.5 * Math.cos(progress * Math.PI);
+
+        const s = formatColor(lerpColor(fromStart, toStart, ease));
+        const m = formatColor(lerpColor(fromMid, toMid, ease));
+        const e = formatColor(lerpColor(fromEnd, toEnd, ease));
+        const c = formatColor(lerpColor(fromCore, toCore, ease));
+        const gm = formatColor(lerpColor(fromGlowMid, toGlowMid, ease));
+        const dotC = formatColor(lerpColor(fromDot, toDot, ease));
+
+        if (rayStartEl) rayStartEl.setAttribute("stop-color", s);
+        if (rayMidEl) rayMidEl.setAttribute("stop-color", m);
+        if (rayEndEl) rayEndEl.setAttribute("stop-color", e);
+        if (glowCoreEl) glowCoreEl.setAttribute("stop-color", c);
+        if (glowMidEl) glowMidEl.setAttribute("stop-color", gm);
+        if (glowOuterEl) glowOuterEl.setAttribute("stop-color", c);
+
+        dots.forEach(d => { d.style.fill = dotC; });
+
+        if (progress < 1) {
+          activeThemeAnimFrame = requestAnimationFrame(step);
+        } else {
+          currentRenderedStops = {
+            rayStart: targetStops.rayStart,
+            rayMid: targetStops.rayMid,
+            rayEnd: targetStops.rayEnd,
+            glowCore: targetStops.glowCore,
+            glowMid: targetStops.glowMid,
+            dotColor: targetDotColor
+          };
+          activeThemeAnimFrame = null;
+        }
+      }
+
+      activeThemeAnimFrame = requestAnimationFrame(step);
     }
 
     function applyTheme(themeId, isInitial = false) {
@@ -1507,24 +1630,23 @@
           bgB.style.opacity = "0";
           activeBgLayer = "A";
         }
-
-        // Trigger wave ripple
-        const svg = document.getElementById("sunburstSvg");
-        svg.classList.add("theme-switching");
-        setTimeout(() => svg.classList.remove("theme-switching"), 850);
       }
 
       // 3. Update Toggle Button Icon & Label + Trigger Spin
       const iconContainer = document.getElementById("themeBtnIcon");
-      iconContainer.innerHTML = theme.icon;
-      if (!isInitial) {
-        iconContainer.classList.remove("spin-anim");
-        void iconContainer.offsetWidth; // re-trigger animation
-        iconContainer.classList.add("spin-anim");
+      if (iconContainer) {
+        iconContainer.innerHTML = theme.icon;
+        if (!isInitial) {
+          iconContainer.classList.remove("spin-anim");
+          void iconContainer.offsetWidth; // re-trigger animation
+          iconContainer.classList.add("spin-anim");
+        }
       }
 
       const toggleBtn = document.getElementById("themeToggleBtn");
-      toggleBtn.setAttribute("aria-label", `Current theme: ${theme.name}. Click to change theme.`);
+      if (toggleBtn) {
+        toggleBtn.setAttribute("aria-label", `Current theme: ${theme.name}. Click to change theme.`);
+      }
 
       // 4. Update Menu Active Items
       document.querySelectorAll(".theme-option").forEach(opt => {
@@ -1534,31 +1656,14 @@
         opt.setAttribute("aria-checked", isActive ? "true" : "false");
       });
 
-      // 5. Direct gradient stop update for full cross-browser reliability
-      updateSvgGradientStops(theme.stops);
+      // 5. Continuous mathematical interpolation of gradient stops (ZERO FLICKER)
+      transitionThemeColors(theme.stops, theme.dotColor, 650, isInitial);
     }
 
     function cycleTheme() {
       const currentIndex = THEMES.findIndex(t => t.id === currentThemeId);
       const nextTheme = THEMES[(currentIndex + 1) % THEMES.length];
       applyTheme(nextTheme.id);
-    }
-
-    // Direct stop-color update ensures smooth SVG color shift in all browsers
-    function updateSvgGradientStops(stops) {
-      const rayStart = document.getElementById("rayStopStart");
-      const rayMid = document.getElementById("rayStopMid");
-      const rayEnd = document.getElementById("rayStopEnd");
-      const glowCore = document.getElementById("glowStopCore");
-      const glowMid = document.getElementById("glowStopMid");
-      const glowOuter = document.getElementById("glowStopOuter");
-
-      if (rayStart) rayStart.setAttribute("stop-color", stops.rayStart);
-      if (rayMid) rayMid.setAttribute("stop-color", stops.rayMid);
-      if (rayEnd) rayEnd.setAttribute("stop-color", stops.rayEnd);
-      if (glowCore) glowCore.setAttribute("stop-color", stops.glowCore);
-      if (glowMid) glowMid.setAttribute("stop-color", stops.glowMid);
-      if (glowOuter) glowOuter.setAttribute("stop-color", stops.glowCore);
     }
 
     /* ==========================================================================
@@ -1714,14 +1819,14 @@
     // Active looping rays set - only rays currently in motion are updated in rAF for 0% idle overhead
     const activeLoopRays = new Set();
 
-    // Loop duration for one graceful, fluid 360-degree rotation (~920ms)
-    const RAY_LOOP_DURATION = 920;
+    // Loop duration for one graceful, fluid 360-degree rotation (~780ms)
+    const RAY_LOOP_DURATION = 780;
 
     // Trigger 360-degree rotation of the top part only (base x1, y1 strictly fixed at 500, 630)
     function triggerRayLoop(ray, direction = 1) {
       if (ray.isLooping) return;
       const now = performance.now();
-      if (ray.lastLoopEndTime && (now - ray.lastLoopEndTime < 60)) return;
+      if (ray.lastLoopEndTime && (now - ray.lastLoopEndTime < 50)) return;
 
       // Ensure dasharray is clear so full ray is visible during loop
       ray.line.style.strokeDasharray = "none";
