@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cosmic Sunburst - Web Component Integration Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Load the Web Component -->
+  <script src="sunburst.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #09090b;
+      color: #fafafa;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    .header {
+      text-align: center;
+      max-width: 720px;
+      margin-bottom: 28px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(255, 170, 50, 0.12);
+      border: 1px solid rgba(255, 170, 50, 0.3);
+      color: #ffaa33;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+
+    p.subtitle {
+      color: #a1a1aa;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    /* Container for the web component */
+    .preview-card {
+      width: 100%;
+      max-width: 960px;
+      height: 520px;
+      background: #000;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 150, 50, 0.08);
+      margin-bottom: 30px;
+    }
+
+    /* Target the custom element */
+    cosmic-sunburst {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Interactive controls bar */
+    .controls-panel {
+      width: 100%;
+      max-width: 960px;
+      background: #121215;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #d4d4d8;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .control-label span.val {
+      color: #ffaa33;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    select, input[type="range"] {
+      width: 100%;
+      background: #1c1c22;
+      color: #fafafa;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    select:focus {
+      border-color: #ffaa33;
+    }
+
+    /* Integration snippet section */
+    .code-section {
+      width: 100%;
+      max-width: 960px;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .code-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .copy-btn {
+      background: #27272a;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fafafa;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: #3f3f46;
+    }
+
+    pre {
+      background: #121215;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 18px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: #e4e4e7;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+
+    .comment { color: #71717a; }
+    .tag { color: #f472b6; }
+    .attr { color: #38bdf8; }
+    .val { color: #facc15; }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="badge">&lt;cosmic-sunburst&gt; Web Component</div>
+    <h1>Universal Sunburst Animation</h1>
+    <p class="subtitle">Drop into any web page, React, Vue, Next.js, or HTML template with a single line of code.</p>
+  </header>
+
+  <!-- Live Web Component Preview -->
+  <div class="preview-card">
+    <cosmic-sunburst id="sunburstEl" theme="sunrise" speed="920" radius="88" rays="180"></cosmic-sunburst>
+  </div>
+
+  <!-- Interactive Sandbox Controls -->
+  <div class="controls-panel">
+    <div class="control-group">
+      <label class="control-label" for="themeSelect">Theme</label>
+      <select id="themeSelect">
+        <option value="sunrise">Sunrise Amber</option>
+        <option value="cyberpunk">Cyberpunk Neon</option>
+        <option value="sunset">Sunset Crimson</option>
+        <option value="emerald">Emerald Aurora</option>
+        <option value="twilight">Deep Twilight</option>
+        <option value="minimalist">Monochrome Silver</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label class="control-label" for="speedRange">
+        Rotation Speed <span class="val" id="speedVal">920ms</span>
+      </label>
+      <input type="range" id="speedRange" min="400" max="1800" step="50" value="920">
+    </div>
+
+    <div class="control-group">
+      <label class="control-label" for="radiusRange">
+        Trigger Radius <span class="val" id="radiusVal">88px</span>
+      </label>
+      <input type="range" id="radiusRange" min="40" max="160" step="4" value="88">
+    </div>
+
+    <div class="control-group">
+      <label class="control-label" for="raysRange">
+        Ray Density <span class="val" id="raysVal">180</span>
+      </label>
+      <input type="range" id="raysRange" min="80" max="260" step="10" value="180">
+    </div>
+  </div>
+
+  <!-- How to Integrate Code Snippet -->
+  <div class="code-section">
+    <div class="code-header">
+      <h2>How Anyone Can Integrate This Into Their Website</h2>
+      <button class="copy-btn" id="copyBtn">Copy Snippet</button>
+    </div>
+    <pre><code><span class="comment">&lt;!-- 1. Include the script (host it on CDN or your own server) --&gt;</span>
+<span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="val">"https://princesingh04.github.io/task/sunburst.js"</span><span class="tag">&gt;&lt;/script&gt;</span>
+
+<span class="comment">&lt;!-- 2. Use the component anywhere in HTML --&gt;</span>
+<span class="tag">&lt;cosmic-sunburst</span>
+  <span class="attr">theme</span>=<span class="val">"sunrise"</span>
+  <span class="attr">speed</span>=<span class="val">"920"</span>
+  <span class="attr">radius</span>=<span class="val">"88"</span>
+  <span class="attr">rays</span>=<span class="val">"180"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;/cosmic-sunburst&gt;</span></code></pre>
+  </div>
+
+  <script>
+    const el = document.getElementById("sunburstEl");
+    const themeSelect = document.getElementById("themeSelect");
+    const speedRange = document.getElementById("speedRange");
+    const speedVal = document.getElementById("speedVal");
+    const radiusRange = document.getElementById("radiusRange");
+    const radiusVal = document.getElementById("radiusVal");
+    const raysRange = document.getElementById("raysRange");
+    const raysVal = document.getElementById("raysVal");
+    const copyBtn = document.getElementById("copyBtn");
+
+    themeSelect.addEventListener("change", (e) => {
+      el.setAttribute("theme", e.target.value);
+    });
+
+    speedRange.addEventListener("input", (e) => {
+      const v = e.target.value;
+      speedVal.textContent = `${v}ms`;
+      el.setAttribute("speed", v);
+    });
+
+    radiusRange.addEventListener("input", (e) => {
+      const v = e.target.value;
+      radiusVal.textContent = `${v}px`;
+      el.setAttribute("radius", v);
+    });
+
+    raysRange.addEventListener("input", (e) => {
+      const v = e.target.value;
+      raysVal.textContent = v;
+      el.setAttribute("rays", v);
+    });
+
+    copyBtn.addEventListener("click", () => {
+      const code = `<script src="https://princesingh04.github.io/task/sunburst.js"><\/script>\n<cosmic-sunburst theme="${el.getAttribute('theme')}" speed="${el.getAttribute('speed')}" radius="${el.getAttribute('radius')}" rays="${el.getAttribute('rays')}"></cosmic-sunburst>`;
+      navigator.clipboard.writeText(code).then(() => {
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => copyBtn.textContent = "Copy Snippet", 1800);
+      });
+    });
+  </script>
+</body>
+</html>
