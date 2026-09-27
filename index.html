@@ -540,6 +540,51 @@
       transition: transform 0.4s ease, opacity 0.4s ease;
     }
 
+    /* ==========================================================================
+       FLOATING AMBIENT PARTICLES
+       ========================================================================== */
+    .particle-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 3;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    /* ==========================================================================
+       SHOCKWAVE RIPPLE ON CLICK
+       ========================================================================== */
+    .shockwave-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid var(--ray-mid);
+      pointer-events: none;
+      z-index: 4;
+      opacity: 0;
+      transform: scale(0);
+      will-change: transform, opacity;
+    }
+
+    @keyframes shockwave-expand {
+      0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0.65;
+        border-width: 3px;
+      }
+      40% {
+        opacity: 0.4;
+        border-width: 2px;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+        border-width: 0.5px;
+      }
+    }
+
     /* Icon 360 spin animation */
     .spin-anim {
       animation: icon-spin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1070,6 +1115,9 @@
         <!-- AMBIENT RADIAL GLOW -->
         <div class="glow-backdrop" aria-hidden="true"></div>
 
+        <!-- FLOATING PARTICLE CANVAS -->
+        <canvas class="particle-canvas" id="particleCanvas" aria-hidden="true"></canvas>
+
         <!-- RADIAL SUNBURST SVG -->
         <svg
           id="sunburstSvg"
@@ -1108,6 +1156,9 @@
 
           <!-- Radial Glow Disk behind rays -->
           <circle cx="500" cy="630" r="480" fill="url(#svgCoreGlow)" />
+
+          <!-- Trail afterglow group (renders behind active rays) -->
+          <g id="trailGroup" opacity="0.35"></g>
 
           <!-- Dynamic SVG groups for rays and dots -->
           <g id="raysGroup"></g>
@@ -1946,6 +1997,7 @@
             ray.dot.setAttribute("cy", ray.y2.toFixed(1));
             ray.isLooping = false;
             ray.lastLoopEndTime = now;
+            ray._trailCounter = 0;
             activeLoopRays.delete(ray);
           } else {
             // Smoothstep easing (0 to 1 with zero velocity at start and end)
@@ -1966,6 +2018,14 @@
             ray.line.setAttribute("y2", curY2.toFixed(1));
             ray.dot.setAttribute("cx", curX2.toFixed(1));
             ray.dot.setAttribute("cy", curY2.toFixed(1));
+
+            // Spawn trail afterglow every ~4 frames during the loop
+            if (!ray._trailCounter) ray._trailCounter = 0;
+            ray._trailCounter++;
+            if (ray._trailCounter % 4 === 0) {
+              const sw = parseFloat(ray.line.getAttribute("data-base-w")) || 1;
+              spawnTrail(ORIGIN_X, ORIGIN_Y, curX2, curY2, sw);
+            }
           }
         }
       }
@@ -1980,13 +2040,285 @@
       }
     }
 
-    // Panel click to trigger ripple pulse wave
+    /* ==========================================================================
+       AMBIENT BREATHING SHIMMER
+       Continuous wave that makes rays subtly pulse in opacity
+       like a living, breathing organism
+       ========================================================================== */
+    let breathingActive = true;
+    let breathingFrame = null;
+
+    function startBreathingShimmer() {
+      if (breathingFrame) return;
+
+      function breathe(timestamp) {
+        if (!breathingActive) { breathingFrame = null; return; }
+
+        const count = rayDataList.length;
+        for (let i = 0; i < count; i++) {
+          const ray = rayDataList[i];
+          if (ray.isLooping) continue; // Don't interfere with active loops
+
+          // Create a traveling wave: rays pulse based on angle + time
+          // Wave travels from center outward with a gentle period
+          const wavePhase = (timestamp * 0.0008) + (ray.angleDeg * 0.035);
+          const breath = 0.82 + 0.18 * Math.sin(wavePhase);
+
+          // Secondary slower wave for depth
+          const deepPhase = (timestamp * 0.0004) + (i * 0.02);
+          const deepBreath = 0.90 + 0.10 * Math.sin(deepPhase);
+
+          const finalOp = parseFloat(ray.line.style.getPropertyValue("--base-op")) || 0.5;
+          const modulatedOp = (finalOp * breath * deepBreath).toFixed(3);
+
+          ray.line.style.opacity = modulatedOp;
+          ray.dot.style.opacity = modulatedOp;
+        }
+
+        breathingFrame = requestAnimationFrame(breathe);
+      }
+
+      breathingFrame = requestAnimationFrame(breathe);
+    }
+
+    /* ==========================================================================
+       FLOATING PARTICLE SYSTEM
+       Tiny luminous particles drift upward from origin area,
+       adding atmospheric depth like sparks from a cosmic fire
+       ========================================================================== */
+    const particleCanvas = document.getElementById("particleCanvas");
+    let particleCtx = null;
+    let particles = [];
+    let particleAnimFrame = null;
+    const MAX_PARTICLES = 40;
+
+    function initParticleCanvas() {
+      if (!particleCanvas) return;
+      particleCtx = particleCanvas.getContext("2d");
+      resizeParticleCanvas();
+    }
+
+    function resizeParticleCanvas() {
+      if (!particleCanvas || !particleCtx) return;
+      const rect = visualPanel.getBoundingClientRect();
+      particleCanvas.width = rect.width * (window.devicePixelRatio || 1);
+      particleCanvas.height = rect.height * (window.devicePixelRatio || 1);
+      particleCanvas.style.width = rect.width + "px";
+      particleCanvas.style.height = rect.height + "px";
+      particleCtx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    }
+
+    function getThemeParticleColor() {
+      const theme = THEMES.find(t => t.id === currentThemeId);
+      if (!theme) return [255, 255, 255];
+      const c = parseColor(theme.stops.rayMid);
+      return [c[0], c[1], c[2]];
+    }
+
+    function spawnParticle() {
+      if (particles.length >= MAX_PARTICLES) return;
+      const rect = visualPanel.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      // Spawn near origin (bottom center), with horizontal spread
+      const cx = w * 0.5 + (Math.random() - 0.5) * w * 0.6;
+      const cy = h * 0.92 + Math.random() * h * 0.08;
+
+      const color = getThemeParticleColor();
+
+      particles.push({
+        x: cx,
+        y: cy,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: -(0.25 + Math.random() * 0.55),  // Drift upward
+        size: 1.2 + Math.random() * 2.0,
+        life: 0,
+        maxLife: 180 + Math.random() * 220,  // ~3-6 seconds at 60fps
+        color: color,
+        wobbleSpeed: 0.02 + Math.random() * 0.03,
+        wobbleAmp: 0.15 + Math.random() * 0.35
+      });
+    }
+
+    function renderParticles() {
+      if (!particleCtx || !particleCanvas) { particleAnimFrame = null; return; }
+
+      const rect = visualPanel.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      particleCtx.clearRect(0, 0, w, h);
+
+      // Spawn new particles gradually
+      if (Math.random() < 0.15 && particles.length < MAX_PARTICLES) {
+        spawnParticle();
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life++;
+
+        // Remove dead particles
+        if (p.life >= p.maxLife || p.y < -10) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        // Update position with gentle wobble
+        p.x += p.vx + Math.sin(p.life * p.wobbleSpeed) * p.wobbleAmp;
+        p.y += p.vy;
+
+        // Fade in/out lifecycle
+        const lifeRatio = p.life / p.maxLife;
+        let alpha;
+        if (lifeRatio < 0.12) {
+          alpha = lifeRatio / 0.12; // Fade in
+        } else if (lifeRatio > 0.75) {
+          alpha = (1 - lifeRatio) / 0.25; // Fade out
+        } else {
+          alpha = 1;
+        }
+        alpha *= 0.45; // Overall subtlety
+
+        // Draw glowing particle
+        const [r, g, b] = p.color;
+        const shrink = 1 - lifeRatio * 0.3;
+        const radius = p.size * shrink;
+
+        // Outer glow
+        const grad = particleCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius * 3);
+        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.6})`);
+        grad.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, ${alpha * 0.2})`);
+        grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+        particleCtx.fillStyle = grad;
+        particleCtx.beginPath();
+        particleCtx.arc(p.x, p.y, radius * 3, 0, Math.PI * 2);
+        particleCtx.fill();
+
+        // Core bright dot
+        particleCtx.fillStyle = `rgba(${Math.min(255, r + 60)}, ${Math.min(255, g + 60)}, ${Math.min(255, b + 60)}, ${alpha * 0.9})`;
+        particleCtx.beginPath();
+        particleCtx.arc(p.x, p.y, radius * 0.5, 0, Math.PI * 2);
+        particleCtx.fill();
+      }
+
+      particleAnimFrame = requestAnimationFrame(renderParticles);
+    }
+
+    /* ==========================================================================
+       TRAIL AFTERGLOW SYSTEM
+       When rays rotate, they leave brief ghost trails that fade out
+       ========================================================================== */
+    const trailGroup = document.getElementById("trailGroup");
+    const activeTrails = [];
+    const MAX_TRAILS = 60;
+    let trailFrame = null;
+
+    function spawnTrail(x1, y1, x2, y2, strokeWidth) {
+      if (!trailGroup || activeTrails.length >= MAX_TRAILS) return;
+
+      const trail = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      trail.setAttribute("x1", x1);
+      trail.setAttribute("y1", y1);
+      trail.setAttribute("x2", x2.toFixed(1));
+      trail.setAttribute("y2", y2.toFixed(1));
+      trail.setAttribute("stroke", "url(#rayRadialGrad)");
+      trail.setAttribute("stroke-width", (strokeWidth * 0.6).toFixed(2));
+      trail.setAttribute("stroke-linecap", "round");
+      trail.style.opacity = "0.3";
+      trailGroup.appendChild(trail);
+
+      activeTrails.push({
+        el: trail,
+        life: 0,
+        maxLife: 18 // ~300ms at 60fps
+      });
+
+      if (!trailFrame) {
+        trailFrame = requestAnimationFrame(updateTrails);
+      }
+    }
+
+    function updateTrails() {
+      for (let i = activeTrails.length - 1; i >= 0; i--) {
+        const t = activeTrails[i];
+        t.life++;
+        const decay = 1 - (t.life / t.maxLife);
+        t.el.style.opacity = (decay * 0.3).toFixed(3);
+
+        if (t.life >= t.maxLife) {
+          t.el.remove();
+          activeTrails.splice(i, 1);
+        }
+      }
+
+      if (activeTrails.length > 0) {
+        trailFrame = requestAnimationFrame(updateTrails);
+      } else {
+        trailFrame = null;
+      }
+    }
+
+    /* ==========================================================================
+       CLICK SHOCKWAVE
+       Clicking the panel creates expanding concentric rings
+       and triggers a radial wave that pulses through the rays
+       ========================================================================== */
     visualPanel.addEventListener("click", (e) => {
       if (toggleBtn.contains(e.target) || themeMenu.contains(e.target)) return;
+      const guideContainer = document.querySelector(".integration-guide-container");
+      if (guideContainer && guideContainer.contains(e.target)) return;
+
+      // Glow pulse
       visualPanel.classList.remove("pulse-active");
       void visualPanel.offsetWidth;
       visualPanel.classList.add("pulse-active");
       setTimeout(() => visualPanel.classList.remove("pulse-active"), 1200);
+
+      // Create expanding shockwave rings at click position
+      const rect = visualPanel.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      for (let ring = 0; ring < 3; ring++) {
+        const ringEl = document.createElement("div");
+        ringEl.className = "shockwave-ring";
+        const size = 300 + ring * 200;
+        ringEl.style.width = size + "px";
+        ringEl.style.height = size + "px";
+        ringEl.style.left = clickX + "px";
+        ringEl.style.top = clickY + "px";
+        ringEl.style.animation = `shockwave-expand ${0.8 + ring * 0.3}s cubic-bezier(0.22, 1, 0.36, 1) ${ring * 0.1}s forwards`;
+
+        visualPanel.appendChild(ringEl);
+        setTimeout(() => ringEl.remove(), 1500 + ring * 300);
+      }
+
+      // Trigger radial wave through rays outward from click point
+      const svgClickX = (clickX / rect.width) * 1000;
+      const svgClickY = (clickY / rect.height) * 620;
+
+      const count = rayDataList.length;
+      for (let i = 0; i < count; i++) {
+        const ray = rayDataList[i];
+        if (ray.isLooping) continue;
+
+        // Distance from click to ray midpoint
+        const midX = (ORIGIN_X + ray.x2) / 2;
+        const midY = (ORIGIN_Y + ray.y2) / 2;
+        const dist = Math.sqrt((svgClickX - midX) ** 2 + (svgClickY - midY) ** 2);
+
+        // Stagger the trigger based on distance — creates ripple wave effect
+        const delay = Math.min(dist * 0.6, 400);
+
+        setTimeout(() => {
+          if (!ray.isLooping) {
+            const dir = svgClickX < midX ? -1 : 1;
+            triggerRayLoop(ray, dir);
+          }
+        }, delay);
+      }
     });
 
     /* ==========================================================================
@@ -2180,6 +2512,20 @@ Please implement this into my project now.`;
 
       initBackground(initialTheme);
       applyTheme(initialTheme, true);
+
+      // Start ambient breathing shimmer (delayed to let entrance finish)
+      setTimeout(() => {
+        startBreathingShimmer();
+      }, 2500);
+
+      // Initialize floating particle system
+      initParticleCanvas();
+      renderParticles();
+
+      // Resize particle canvas with panel
+      window.addEventListener("resize", () => {
+        resizeParticleCanvas();
+      }, { passive: true });
     });
   </script>
 </body>
