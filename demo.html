@@ -249,6 +249,41 @@
 <span class="tag">&lt;/cosmic-sunburst&gt;</span></code></pre>
   </div>
 
+  <!-- AI Agent Prompt Section -->
+  <div class="code-section" style="margin-top: 30px;">
+    <div class="code-header">
+      <h2>Prompt for AI Coding Agents (Cursor, Claude, Copilot, ChatGPT)</h2>
+      <button class="copy-btn" id="copyAgentBtn" style="background: linear-gradient(135deg, #a855f7, #3b82f6); border-color: rgba(168, 85, 247, 0.4);">Copy Agent Prompt</button>
+    </div>
+    <pre style="max-height: 240px;"><code id="agentPromptCode">I want to integrate the interactive Cosmic Sunburst background animation component (&lt;cosmic-sunburst&gt;) into this application.
+
+Instructions for AI Agent:
+1. Load the universal Web Component script:
+   Add this script tag to the HTML &lt;head&gt; or root layout:
+   &lt;script src="https://princesingh04.github.io/task/sunburst.js"&gt;&lt;/script&gt;
+
+2. Insert the &lt;cosmic-sunburst&gt; element into the hero or background container:
+   &lt;cosmic-sunburst
+     theme="sunrise"
+     speed="920"
+     radius="88"
+     rays="180"&gt;
+   &lt;/cosmic-sunburst&gt;
+
+3. Container Styling:
+   - Give the parent container a defined height (e.g. height: 500px or 100vh) and position: relative.
+   - Set overflow: hidden and border-radius as desired.
+   - Any foreground content (headings, buttons) should have position: relative and z-index &gt;= 10.
+
+4. Available Attributes:
+   - theme: 'sunrise' | 'cyberpunk' | 'sunset' | 'emerald' | 'twilight' | 'minimalist'
+   - speed: rotation loop duration in ms (default 920)
+   - radius: cursor hover influence radius in px (default 88)
+   - rays: total ray count (default 180)
+
+Please implement this into my project now.</code></pre>
+  </div>
+
   <script>
     const el = document.getElementById("sunburstEl");
     const themeSelect = document.getElementById("themeSelect");
@@ -289,6 +324,17 @@
         setTimeout(() => copyBtn.textContent = "Copy Snippet", 1800);
       });
     });
+
+    const copyAgentBtn = document.getElementById("copyAgentBtn");
+    const agentPromptCode = document.getElementById("agentPromptCode");
+    if (copyAgentBtn && agentPromptCode) {
+      copyAgentBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText(agentPromptCode.textContent).then(() => {
+          copyAgentBtn.textContent = "Copied!";
+          setTimeout(() => copyAgentBtn.textContent = "Copy Agent Prompt", 1800);
+        });
+      });
+    }
   </script>
 </body>
 </html>

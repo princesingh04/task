@@ -753,6 +753,244 @@
       border: 0;
     }
 
+    /* ==========================================================================
+       INTEGRATION GUIDE BUTTONS & MODAL DIALOG
+       ========================================================================== */
+    .integration-guide-container {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .guide-pill-btn {
+      height: 42px;
+      padding: 0 16px;
+      border-radius: 999px;
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      color: var(--btn-color);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.84rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      transition: background 0.25s ease,
+                  border-color 0.25s ease,
+                  transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.25s ease,
+                  color var(--transition-duration) var(--ease-smooth);
+      outline: none;
+    }
+
+    .guide-pill-btn:hover {
+      background: var(--btn-hover-bg);
+      transform: translateY(-1px) scale(1.03);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    .guide-pill-btn:active {
+      transform: scale(0.97);
+    }
+
+    .guide-pill-btn:focus-visible {
+      outline: 2px solid var(--divider-glow);
+      outline-offset: 2px;
+    }
+
+    .guide-pill-btn-ai {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.18), rgba(59, 130, 246, 0.18));
+      border-color: rgba(168, 85, 247, 0.4);
+    }
+    .guide-pill-btn-ai:hover {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.28), rgba(59, 130, 246, 0.28));
+      border-color: rgba(168, 85, 247, 0.65);
+    }
+
+    /* Modal Backdrop */
+    .guide-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.24s ease, visibility 0.24s ease;
+    }
+
+    .guide-modal-overlay.is-open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .guide-modal-card {
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      background: #111115;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 40px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateY(16px) scale(0.97);
+      transition: transform 0.24s cubic-bezier(0.34, 1.4, 0.64, 1);
+    }
+
+    .guide-modal-overlay.is-open .guide-modal-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-header {
+      padding: 20px 24px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .modal-badge {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(255, 170, 50, 0.15);
+      border: 1px solid rgba(255, 170, 50, 0.3);
+      color: #ffaa33;
+    }
+
+    .modal-badge-ai {
+      background: rgba(168, 85, 247, 0.18);
+      border-color: rgba(168, 85, 247, 0.4);
+      color: #c084fc;
+    }
+
+    .modal-title {
+      font-size: 1.18rem;
+      font-weight: 700;
+      color: #fff;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .modal-close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #aaa;
+      font-size: 20px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 22px 24px 26px;
+      overflow-y: auto;
+      color: #d4d4d8;
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .modal-code-block {
+      background: #09090c;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85rem;
+      color: #e4e4e7;
+      overflow-x: auto;
+      margin: 10px 0 16px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+    }
+
+    .modal-step-title {
+      font-weight: 600;
+      color: #fafafa;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+
+    .modal-action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-copy-btn {
+      padding: 10px 22px;
+      border-radius: 10px;
+      background: #3b82f6;
+      border: none;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .modal-copy-btn:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+
+    .modal-copy-btn.copied {
+      background: #10b981 !important;
+    }
+
+    .modal-copy-btn-ai {
+      background: linear-gradient(135deg, #a855f7, #3b82f6);
+    }
+    .modal-copy-btn-ai:hover {
+      background: linear-gradient(135deg, #9333ea, #2563eb);
+    }
+
     /* Responsive adjustments */
     @media (max-width: 640px) {
       .app-wrapper {
@@ -791,6 +1029,23 @@
 
       <!-- VISUAL PANEL -->
       <main class="visual-panel" aria-label="Aesthetic Sunburst Visual Panel">
+        <!-- INTEGRATION GUIDE BUTTONS -->
+        <div class="integration-guide-container">
+          <button id="manualGuideBtn" class="guide-pill-btn" type="button" aria-haspopup="dialog" title="How to use manually in your project">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+            <span>Manual Integration</span>
+          </button>
+          <button id="agentPromptBtn" class="guide-pill-btn guide-pill-btn-ai" type="button" aria-haspopup="dialog" title="Copy ready prompt for AI coding agents">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+            </svg>
+            <span>Agent Prompt</span>
+          </button>
+        </div>
+
         <!-- THEME DROPDOWN TOGGLE -->
         <div class="theme-control-container">
           <button
@@ -871,6 +1126,22 @@
           <g id="dotsGroup"></g>
         </svg>
       </main>
+    </div>
+  </div>
+
+  <!-- INTEGRATION GUIDE MODAL OVERLAY -->
+  <div id="guideModalOverlay" class="guide-modal-overlay" aria-hidden="true">
+    <div class="guide-modal-card" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-badge" id="modalBadge">GUIDE</span>
+          <h2 class="modal-title" id="modalTitle">Integration Guide</h2>
+        </div>
+        <button id="modalCloseBtn" class="modal-close-btn" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <!-- Content injected dynamically by JS -->
+      </div>
     </div>
   </div>
 
@@ -1611,6 +1882,179 @@
       void visualPanel.offsetWidth;
       visualPanel.classList.add("pulse-active");
       setTimeout(() => visualPanel.classList.remove("pulse-active"), 1200);
+    });
+
+    /* ==========================================================================
+       INTEGRATION MODAL & AGENT PROMPT CONTROLLER
+       ========================================================================== */
+    const guideModalOverlay = document.getElementById("guideModalOverlay");
+    const modalCloseBtn = document.getElementById("modalCloseBtn");
+    const modalBadge = document.getElementById("modalBadge");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalBody = document.getElementById("modalBody");
+    const manualGuideBtn = document.getElementById("manualGuideBtn");
+    const agentPromptBtn = document.getElementById("agentPromptBtn");
+
+    const MANUAL_CODE = `<!-- 1. Include the Web Component script -->
+<script src="https://princesingh04.github.io/task/sunburst.js"><\/script>
+
+<!-- 2. Drop the <cosmic-sunburst> tag into your HTML / Hero / Container -->
+<cosmic-sunburst
+  theme="sunrise"
+  speed="920"
+  radius="88"
+  rays="180">
+</cosmic-sunburst>`;
+
+    const AGENT_PROMPT_TEXT = `I want to integrate the interactive Cosmic Sunburst background animation component (<cosmic-sunburst>) into this application.
+
+Instructions for AI Agent:
+1. Load the universal Web Component script:
+   Add this script tag to the HTML <head> or root layout:
+   <script src="https://princesingh04.github.io/task/sunburst.js"><\/script>
+
+2. Insert the <cosmic-sunburst> element into the hero or background container:
+   <cosmic-sunburst
+     theme="sunrise"
+     speed="920"
+     radius="88"
+     rays="180">
+   </cosmic-sunburst>
+
+3. Container Styling:
+   - Give the parent container a defined height (e.g. height: 500px or 100vh) and position: relative.
+   - Set overflow: hidden and border-radius as desired.
+   - Any foreground content (headings, buttons) should have position: relative and z-index >= 10.
+
+4. Available Attributes:
+   - theme: 'sunrise' | 'cyberpunk' | 'sunset' | 'emerald' | 'twilight' | 'minimalist'
+   - speed: rotation loop duration in ms (default 920)
+   - radius: cursor hover influence radius in px (default 88)
+   - rays: total ray count (default 180)
+
+5. Framework-specific notes:
+   - React / Next.js (App Router): Import script using next/script or load it in layout.tsx. To suppress custom element warning in TypeScript, add:
+     declare global { namespace JSX { interface IntrinsicElements { 'cosmic-sunburst': any; } } }
+   - Vue: Add compilerOptions.isCustomElement = tag => tag === 'cosmic-sunburst'.
+   - Pure HTML: Works natively with zero setup.
+
+Please implement this into my project now.`;
+
+    function openModal(type) {
+      if (type === "manual") {
+        modalBadge.textContent = "MANUAL GUIDE";
+        modalBadge.className = "modal-badge";
+        modalTitle.textContent = "Manual Integration Guide";
+        modalBody.innerHTML = `
+          <p style="margin-bottom: 12px; color: #a1a1aa;">Add this interactive 360° ray animation to any website in two simple steps:</p>
+          
+          <div class="modal-step-title">Step 1: Include the Script</div>
+          <p style="font-size: 0.85rem; color: #888;">Place this in your HTML <code>&lt;head&gt;</code> or right before <code>&lt;/body&gt;</code>:</p>
+          <pre class="modal-code-block"><code>&lt;script src="https://princesingh04.github.io/task/sunburst.js"&gt;&lt;/script&gt;</code></pre>
+
+          <div class="modal-step-title">Step 2: Add the Component Tag</div>
+          <p style="font-size: 0.85rem; color: #888;">Place this anywhere inside your hero section or background container:</p>
+          <pre class="modal-code-block"><code>&lt;cosmic-sunburst
+  theme="sunrise"
+  speed="920"
+  radius="88"
+  rays="180"&gt;
+&lt;/cosmic-sunburst&gt;</code></pre>
+
+          <div class="modal-step-title">Framework Tips</div>
+          <p style="font-size: 0.84rem; color: #a1a1aa; line-height: 1.5;">
+            <strong>React / Next.js:</strong> Use <code>next/script</code> or load in <code>layout.tsx</code>.<br>
+            <strong>Vue / Svelte:</strong> Add tag directly into template. Works out of the box.<br>
+            <strong>CSS:</strong> Ensure parent container has <code>position: relative; overflow: hidden;</code>
+          </p>
+
+          <div class="modal-action-bar">
+            <button id="copySnippetBtn" class="modal-copy-btn" type="button">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              <span>Copy Full Snippet</span>
+            </button>
+          </div>
+        `;
+
+        document.getElementById("copySnippetBtn").addEventListener("click", function() {
+          navigator.clipboard.writeText(MANUAL_CODE).then(() => {
+            this.classList.add("copied");
+            this.querySelector("span").textContent = "Copied to Clipboard!";
+            setTimeout(() => {
+              this.classList.remove("copied");
+              this.querySelector("span").textContent = "Copy Full Snippet";
+            }, 2000);
+          });
+        });
+
+      } else {
+        modalBadge.textContent = "AI PROMPT";
+        modalBadge.className = "modal-badge modal-badge-ai";
+        modalTitle.textContent = "AI Agent Integration Prompt";
+        modalBody.innerHTML = `
+          <p style="margin-bottom: 12px; color: #a1a1aa;">
+            Copy this pre-engineered prompt and paste it into <strong>Cursor, Claude, ChatGPT, Windsurf, or GitHub Copilot</strong> to automatically integrate this animation into your project:
+          </p>
+          
+          <pre class="modal-code-block" style="max-height: 280px; overflow-y: auto;"><code>${AGENT_PROMPT_TEXT}</code></pre>
+
+          <div class="modal-action-bar">
+            <button id="copyAgentPromptBtn" class="modal-copy-btn modal-copy-btn-ai" type="button">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              <span>Copy Agent Prompt</span>
+            </button>
+          </div>
+        `;
+
+        document.getElementById("copyAgentPromptBtn").addEventListener("click", function() {
+          navigator.clipboard.writeText(AGENT_PROMPT_TEXT).then(() => {
+            this.classList.add("copied");
+            this.querySelector("span").textContent = "Copied to Clipboard!";
+            setTimeout(() => {
+              this.classList.remove("copied");
+              this.querySelector("span").textContent = "Copy Agent Prompt";
+            }, 2000);
+          });
+        });
+      }
+
+      guideModalOverlay.classList.add("is-open");
+      guideModalOverlay.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal() {
+      guideModalOverlay.classList.remove("is-open");
+      guideModalOverlay.setAttribute("aria-hidden", "true");
+    }
+
+    if (manualGuideBtn) {
+      manualGuideBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openModal("manual");
+      });
+    }
+
+    if (agentPromptBtn) {
+      agentPromptBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openModal("agent");
+      });
+    }
+
+    if (modalCloseBtn) {
+      modalCloseBtn.addEventListener("click", closeModal);
+    }
+
+    if (guideModalOverlay) {
+      guideModalOverlay.addEventListener("click", (e) => {
+        if (e.target === guideModalOverlay) closeModal();
+      });
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && guideModalOverlay && guideModalOverlay.classList.contains("is-open")) {
+        closeModal();
+      }
     });
 
     /* ==========================================================================
