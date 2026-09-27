@@ -541,7 +541,7 @@
     }
 
     /* ==========================================================================
-       FLOATING AMBIENT PARTICLES
+       FLOATING AMBIENT PARTICLES & NEBULA TRAILS CANVAS
        ========================================================================== */
     .particle-canvas {
       position: absolute;
@@ -549,40 +549,9 @@
       width: 100%;
       height: 100%;
       pointer-events: none;
-      z-index: 3;
+      z-index: 4;
       border-radius: 20px;
       overflow: hidden;
-    }
-
-    /* ==========================================================================
-       SHOCKWAVE RIPPLE ON CLICK
-       ========================================================================== */
-    .shockwave-ring {
-      position: absolute;
-      border-radius: 50%;
-      border: 2px solid var(--ray-mid);
-      pointer-events: none;
-      z-index: 4;
-      opacity: 0;
-      transform: scale(0);
-      will-change: transform, opacity;
-    }
-
-    @keyframes shockwave-expand {
-      0% {
-        transform: translate(-50%, -50%) scale(0);
-        opacity: 0.65;
-        border-width: 3px;
-      }
-      40% {
-        opacity: 0.4;
-        border-width: 2px;
-      }
-      100% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 0;
-        border-width: 0.5px;
-      }
     }
 
     /* Icon 360 spin animation */
@@ -1157,9 +1126,6 @@
           <!-- Radial Glow Disk behind rays -->
           <circle cx="500" cy="630" r="480" fill="url(#svgCoreGlow)" />
 
-          <!-- Trail afterglow group (renders behind active rays) -->
-          <g id="trailGroup" opacity="0.35"></g>
-
           <!-- Dynamic SVG groups for rays and dots -->
           <g id="raysGroup"></g>
           <g id="dotsGroup"></g>
@@ -1462,8 +1428,10 @@
         dotsGroup.appendChild(circle);
 
         const rayObj = {
+          index: i,
           line,
           dot: circle,
+          dotRadius,
           angleRad,
           angleDeg,
           baseLen: length,
@@ -1482,7 +1450,10 @@
           isLooping: false,
           loopStartTime: 0,
           loopDuration: 0,
-          loopDir: 1
+          loopDir: 1,
+          swayAngle: 0,
+          swayVel: 0,
+          trailPoints: []
         };
 
         // Direct hover on this ray or dot
@@ -1867,17 +1838,18 @@
       return (px - projX) * (px - projX) + (py - projY) * (py - projY);
     }
 
-    // Active looping rays set - only rays currently in motion are updated in rAF for 0% idle overhead
+    // ==========================================================================
+    // HARMONIC CELESTIAL ENGINE: PLUCKED HARP STRINGS & SPRING RESONANCE
+    // ==========================================================================
     const activeLoopRays = new Set();
-
-    // Loop duration for one graceful, fluid 360-degree rotation (~780ms)
-    const RAY_LOOP_DURATION = 780;
+    const activeSwayRays = new Set();
+    const RAY_LOOP_DURATION = 720; // Silky snappy 360 loop duration
 
     // Trigger 360-degree rotation of the top part only (base x1, y1 strictly fixed at 500, 630)
-    function triggerRayLoop(ray, direction = 1) {
+    function triggerRayLoop(ray, direction = 1, customDuration = null, triggerHarmonics = true) {
       if (ray.isLooping) return;
       const now = performance.now();
-      if (ray.lastLoopEndTime && (now - ray.lastLoopEndTime < 50)) return;
+      if (ray.lastLoopEndTime && (now - ray.lastLoopEndTime < 45)) return;
 
       // Ensure dasharray is clear so full ray is visible during loop
       ray.line.style.strokeDasharray = "none";
@@ -1885,9 +1857,24 @@
 
       ray.isLooping = true;
       ray.loopStartTime = now;
-      ray.loopDuration = RAY_LOOP_DURATION;
+      ray.loopDuration = customDuration || RAY_LOOP_DURATION;
       ray.loopDir = direction >= 0 ? 1 : -1;
+      ray.trailPoints = [];
       activeLoopRays.add(ray);
+
+      // Sympathetic Resonance (Harmonic Harp Pluck):
+      // Nearby rays feel the celestial wave and softly sway with spring physics
+      if (triggerHarmonics) {
+        const offsets = [-3, -2, -1, 1, 2, 3];
+        for (const off of offsets) {
+          const neighbor = rayDataList[ray.index + off];
+          if (neighbor && !neighbor.isLooping) {
+            const imp = (off > 0 ? 1 : -1) * (0.016 / Math.abs(off)) * ray.loopDir;
+            neighbor.swayVel += imp;
+            activeSwayRays.add(neighbor);
+          }
+        }
+      }
 
       if (!animFrameId) {
         animFrameId = requestAnimationFrame(renderAnimationLoop);
@@ -1901,6 +1888,7 @@
       currentX = targetX;
       currentY = targetY;
       lastMouseX = targetX;
+      lastMouseY = targetY;
       targetOp = 1;
       mouseActive = true;
 
@@ -1909,6 +1897,7 @@
       }
     }, { passive: true });
 
+    let lastMouseY = 310;
     visualPanel.addEventListener("pointermove", (e) => {
       // Ignore if pointer is over the theme toggle button or open menu
       if (toggleBtn.contains(e.target) || themeMenu.contains(e.target)) {
@@ -1920,11 +1909,16 @@
       const curY = e.clientY - panelTop;
 
       const deltaX = curX - lastMouseX;
-      if (Math.abs(deltaX) > 1) {
+      const deltaY = curY - lastMouseY;
+      if (Math.abs(deltaX) > 0.8) {
         mouseDir = deltaX > 0 ? 1 : -1;
       }
-      lastMouseX = curX;
 
+      // Impart gentle solar breeze to nearby dust motes
+      pushParticles(curX, curY, deltaX * 0.15, deltaY * 0.15);
+
+      lastMouseX = curX;
+      lastMouseY = curY;
       targetX = curX;
       targetY = curY;
       targetOp = 1;
@@ -1934,8 +1928,8 @@
       const svgX = (curX / panelWidth) * 1000;
       const svgY = (curY / panelHeight) * 620;
 
-      // Trigger radius: 88 SVG units for smooth, responsive sweep across rays
-      const TRIGGER_RADIUS = 88;
+      // Trigger radius: 80 SVG units for smooth, responsive sweep across rays
+      const TRIGGER_RADIUS = 80;
       const TRIGGER_RADIUS_SQ = TRIGGER_RADIUS * TRIGGER_RADIUS;
 
       const count = rayDataList.length;
@@ -1969,8 +1963,14 @@
       mouseActive = false;
     });
 
+    let lastFrameTime = performance.now();
+
     function renderAnimationLoop(timestamp) {
-      // 1. Snappy, instantaneous cursor tracking for ambient spotlight
+      const now = timestamp || performance.now();
+      const dt = Math.min((now - lastFrameTime) / 1000, 0.05); // cap at 50ms to prevent jumps
+      lastFrameTime = now;
+
+      // 1. Smooth cursor spotlight tracking
       currentX += (targetX - currentX) * 0.72;
       currentY += (targetY - currentY) * 0.72;
       currentOp += (targetOp - currentOp) * 0.25;
@@ -1980,37 +1980,74 @@
         cursorSpotlight.style.opacity = currentOp.toFixed(3);
       }
 
-      // 2. Fixed-Base 360-degree Top Ray Rotation Engine
+      // 2. Harmonic Sympathetic Sway (Elastic Spring Physics)
+      if (activeSwayRays.size > 0) {
+        const springK = 48;   // Spring stiffness
+        const damping = 7.5;  // Damping
+        for (const ray of activeSwayRays) {
+          if (ray.isLooping) {
+            activeSwayRays.delete(ray);
+            continue;
+          }
+          const force = -springK * ray.swayAngle - damping * ray.swayVel;
+          ray.swayVel += force * dt;
+          ray.swayAngle += ray.swayVel * dt;
+
+          if (Math.abs(ray.swayAngle) < 0.0003 && Math.abs(ray.swayVel) < 0.0003) {
+            ray.swayAngle = 0;
+            ray.swayVel = 0;
+            ray.line.setAttribute("x2", ray.x2.toFixed(1));
+            ray.line.setAttribute("y2", ray.y2.toFixed(1));
+            ray.dot.setAttribute("cx", ray.x2.toFixed(1));
+            ray.dot.setAttribute("cy", ray.y2.toFixed(1));
+            activeSwayRays.delete(ray);
+          } else {
+            const disp = ray.swayAngle * ray.baseLen;
+            const curX = ray.x2 + disp * ray.vx;
+            const curY = ray.y2 + disp * ray.vy;
+            ray.line.setAttribute("x2", curX.toFixed(1));
+            ray.line.setAttribute("y2", curY.toFixed(1));
+            ray.dot.setAttribute("cx", curX.toFixed(1));
+            ray.dot.setAttribute("cy", curY.toFixed(1));
+          }
+        }
+      }
+
+      // 3. Fixed-Base 360-degree Top Ray Rotation Engine
       // Base (x1, y1) stays strictly pinned at (500, 630)
-      // Only (x2, y2) and dot (cx, cy) trace the full 360-degree closed orbit
       if (activeLoopRays.size > 0) {
-        const now = timestamp || performance.now();
         for (const ray of activeLoopRays) {
           const elapsed = now - ray.loopStartTime;
           const rawProgress = elapsed / ray.loopDuration;
 
           if (rawProgress >= 1) {
-            // Loop finished: snap back to exact resting coordinates
             ray.line.setAttribute("x2", ray.x2.toFixed(1));
             ray.line.setAttribute("y2", ray.y2.toFixed(1));
             ray.dot.setAttribute("cx", ray.x2.toFixed(1));
             ray.dot.setAttribute("cy", ray.y2.toFixed(1));
             ray.isLooping = false;
             ray.lastLoopEndTime = now;
-            ray._trailCounter = 0;
             activeLoopRays.delete(ray);
+
+            // Emit a soft stardust burst from dot upon returning
+            spawnDotSparkles(ray.x2, ray.y2);
           } else {
-            // Smoothstep easing (0 to 1 with zero velocity at start and end)
+            // Easing: smoothstep with teardrop spiral trajectory
             const p = rawProgress * rawProgress * (3 - 2 * rawProgress);
-            const phi = 2 * Math.PI * p; // Full 360 degrees (0 to 2*PI)
+            const phi = 2 * Math.PI * p;
 
-            // Closed elliptical displacement:
-            // dPerp: sideways swing perpendicular to ray
-            // dPara: longitudinal extension along ray axis
-            const dPerp = ray.loopDir * ray.A_perp * Math.sin(phi);
-            const dPara = ray.A_para * (1 - Math.cos(phi));
+            // Lateral swing with organic asymmetric cardioid shape
+            let dPerp = ray.loopDir * ray.A_perp * Math.sin(phi) * (1 + 0.16 * Math.sin(phi));
+            // Longitudinal stretch along ray axis
+            let dPara = ray.A_para * (1 - Math.cos(phi)) * (0.85 + 0.15 * Math.cos(phi));
 
-            // Compute current top position (base stays strictly at ORIGIN_X, ORIGIN_Y)
+            // Elastic settle on return
+            if (rawProgress > 0.82) {
+              const settleT = (rawProgress - 0.82) / 0.18;
+              const settle = Math.exp(-6 * settleT) * Math.sin(settleT * Math.PI * 4) * 2.5;
+              dPerp += ray.loopDir * settle;
+            }
+
             const curX2 = ray.x2 + dPerp * ray.vx + dPara * ray.ux;
             const curY2 = ray.y2 + dPerp * ray.vy + dPara * ray.uy;
 
@@ -2019,303 +2056,301 @@
             ray.dot.setAttribute("cx", curX2.toFixed(1));
             ray.dot.setAttribute("cy", curY2.toFixed(1));
 
-            // Spawn trail afterglow every ~4 frames during the loop
-            if (!ray._trailCounter) ray._trailCounter = 0;
-            ray._trailCounter++;
-            if (ray._trailCounter % 4 === 0) {
-              const sw = parseFloat(ray.line.getAttribute("data-base-w")) || 1;
-              spawnTrail(ORIGIN_X, ORIGIN_Y, curX2, curY2, sw);
-            }
+            // Record trail point for high-DPI canvas ribbon
+            if (!ray.trailPoints) ray.trailPoints = [];
+            ray.trailPoints.push({ x: curX2, y: curY2, time: now });
+            if (ray.trailPoints.length > 7) ray.trailPoints.shift();
           }
         }
       }
 
-      // 3. Keep rAF active only while active rays or spotlight are animating
-      if (mouseActive || currentOp > 0.005 || activeLoopRays.size > 0) {
+      // 4. Render Canvas (Ribbon Trails, Star Dust Bokeh, Shockwaves, Sparkles)
+      renderCanvasFrame(now);
+
+      // Keep rAF active if anything is in motion or mouse is active
+      const hasCanvasActivity = particles.length > 0 || sparkles.length > 0 || shockwaves.length > 0;
+      if (mouseActive || currentOp > 0.005 || activeLoopRays.size > 0 || activeSwayRays.size > 0 || hasCanvasActivity) {
         animFrameId = requestAnimationFrame(renderAnimationLoop);
       } else {
-        currentOp = 0;
-        if (cursorSpotlight) cursorSpotlight.style.opacity = "0";
         animFrameId = null;
       }
     }
 
-    /* ==========================================================================
-       AMBIENT BREATHING SHIMMER
-       Continuous wave that makes rays subtly pulse in opacity
-       like a living, breathing organism
-       ========================================================================== */
-    let breathingActive = true;
-    let breathingFrame = null;
-
-    function startBreathingShimmer() {
-      if (breathingFrame) return;
-
-      function breathe(timestamp) {
-        if (!breathingActive) { breathingFrame = null; return; }
-
-        const count = rayDataList.length;
-        for (let i = 0; i < count; i++) {
-          const ray = rayDataList[i];
-          if (ray.isLooping) continue; // Don't interfere with active loops
-
-          // Create a traveling wave: rays pulse based on angle + time
-          // Wave travels from center outward with a gentle period
-          const wavePhase = (timestamp * 0.0008) + (ray.angleDeg * 0.035);
-          const breath = 0.82 + 0.18 * Math.sin(wavePhase);
-
-          // Secondary slower wave for depth
-          const deepPhase = (timestamp * 0.0004) + (i * 0.02);
-          const deepBreath = 0.90 + 0.10 * Math.sin(deepPhase);
-
-          const finalOp = parseFloat(ray.line.style.getPropertyValue("--base-op")) || 0.5;
-          const modulatedOp = (finalOp * breath * deepBreath).toFixed(3);
-
-          ray.line.style.opacity = modulatedOp;
-          ray.dot.style.opacity = modulatedOp;
-        }
-
-        breathingFrame = requestAnimationFrame(breathe);
-      }
-
-      breathingFrame = requestAnimationFrame(breathe);
-    }
-
-    /* ==========================================================================
-       FLOATING PARTICLE SYSTEM
-       Tiny luminous particles drift upward from origin area,
-       adding atmospheric depth like sparks from a cosmic fire
-       ========================================================================== */
+    // ==========================================================================
+    // ETHEREAL CANVAS: NEBULA TRAILS, STAR DUST BOKEH, SHOCKWAVES & SPARKLES
+    // ==========================================================================
     const particleCanvas = document.getElementById("particleCanvas");
     let particleCtx = null;
     let particles = [];
-    let particleAnimFrame = null;
-    const MAX_PARTICLES = 40;
+    let sparkles = [];
+    let shockwaves = [];
+    const MAX_PARTICLES = 42;
 
     function initParticleCanvas() {
       if (!particleCanvas) return;
       particleCtx = particleCanvas.getContext("2d");
       resizeParticleCanvas();
+      // Initialize ambient star dust motes
+      particles = [];
+      const rect = visualPanel.getBoundingClientRect();
+      const w = rect.width || 900;
+      const h = rect.height || 550;
+      for (let i = 0; i < MAX_PARTICLES; i++) {
+        particles.push(createDustParticle(w, h));
+      }
     }
 
     function resizeParticleCanvas() {
       if (!particleCanvas || !particleCtx) return;
       const rect = visualPanel.getBoundingClientRect();
-      particleCanvas.width = rect.width * (window.devicePixelRatio || 1);
-      particleCanvas.height = rect.height * (window.devicePixelRatio || 1);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      particleCanvas.width = rect.width * dpr;
+      particleCanvas.height = rect.height * dpr;
       particleCanvas.style.width = rect.width + "px";
       particleCanvas.style.height = rect.height + "px";
-      particleCtx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+      particleCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    function getThemeParticleColor() {
-      const theme = THEMES.find(t => t.id === currentThemeId);
-      if (!theme) return [255, 255, 255];
-      const c = parseColor(theme.stops.rayMid);
-      return [c[0], c[1], c[2]];
+    function createDustParticle(w, h) {
+      return {
+        x: Math.random() * w,
+        y: h * 0.12 + Math.random() * (h * 0.82),
+        vx: (Math.random() - 0.5) * 0.28,
+        vy: -0.10 - Math.random() * 0.28,
+        baseSize: 1.0 + Math.random() * 2.2,
+        twinklePhase: Math.random() * Math.PI * 2,
+        twinkleSpeed: 0.02 + Math.random() * 0.03,
+        alpha: 0.2 + Math.random() * 0.45
+      };
     }
 
-    function spawnParticle() {
-      if (particles.length >= MAX_PARTICLES) return;
-      const rect = visualPanel.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
+    function pushParticles(mx, my, fx, fy) {
+      for (const p of particles) {
+        const dx = p.x - mx;
+        const dy = p.y - my;
+        const distSq = dx * dx + dy * dy;
+        if (distSq < 16000 && distSq > 4) { // within ~125px
+          const dist = Math.sqrt(distSq);
+          const force = (1 - dist / 125) * 2.2;
+          p.vx += (dx / dist) * force * 0.4 + fx * force;
+          p.vy += (dy / dist) * force * 0.4 + fy * force;
+        }
+      }
+    }
 
-      // Spawn near origin (bottom center), with horizontal spread
-      const cx = w * 0.5 + (Math.random() - 0.5) * w * 0.6;
-      const cy = h * 0.92 + Math.random() * h * 0.08;
+    function spawnDotSparkles(svgX, svgY) {
+      const px = (svgX / 1000) * panelWidth;
+      const py = (svgY / 620) * panelHeight;
+      const theme = THEMES.find(t => t.id === currentThemeId) || THEMES[1];
+      const rgb = parseColor(theme.stops.rayMid);
 
-      const color = getThemeParticleColor();
+      const count = 3 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = 0.8 + Math.random() * 2.2;
+        sparkles.push({
+          x: px,
+          y: py,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd - 0.8,
+          life: 0,
+          maxLife: 26 + Math.floor(Math.random() * 14),
+          size: 1.2 + Math.random() * 1.6,
+          color: rgb
+        });
+      }
+    }
 
-      particles.push({
-        x: cx,
-        y: cy,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: -(0.25 + Math.random() * 0.55),  // Drift upward
-        size: 1.2 + Math.random() * 2.0,
-        life: 0,
-        maxLife: 180 + Math.random() * 220,  // ~3-6 seconds at 60fps
-        color: color,
-        wobbleSpeed: 0.02 + Math.random() * 0.03,
-        wobbleAmp: 0.15 + Math.random() * 0.35
+    function triggerShockwave(x, y) {
+      const theme = THEMES.find(t => t.id === currentThemeId) || THEMES[1];
+      const rgb = parseColor(theme.stops.rayMid);
+      shockwaves.push({
+        x,
+        y,
+        radius: 0,
+        maxRadius: Math.max(panelWidth, panelHeight) * 0.85,
+        growthRate: 14 + Math.random() * 4,
+        alpha: 0.65,
+        color: rgb
       });
     }
 
-    function renderParticles() {
-      if (!particleCtx || !particleCanvas) { particleAnimFrame = null; return; }
-
-      const rect = visualPanel.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
-
+    function renderCanvasFrame(now) {
+      if (!particleCtx || !particleCanvas) return;
+      const w = panelWidth;
+      const h = panelHeight;
       particleCtx.clearRect(0, 0, w, h);
 
-      // Spawn new particles gradually
-      if (Math.random() < 0.15 && particles.length < MAX_PARTICLES) {
-        spawnParticle();
+      const theme = THEMES.find(t => t.id === currentThemeId) || THEMES[1];
+      const themeColor = parseColor(theme.stops.rayMid);
+
+      // 1. Draw Luminous Motion Ribbon Trails
+      particleCtx.lineCap = "round";
+      particleCtx.lineJoin = "round";
+
+      for (const ray of rayDataList) {
+        if (!ray.trailPoints || ray.trailPoints.length < 2) continue;
+
+        // Clean out stale points older than 280ms
+        while (ray.trailPoints.length > 0 && (now - ray.trailPoints[0].time > 280)) {
+          ray.trailPoints.shift();
+        }
+        if (ray.trailPoints.length < 2) continue;
+
+        const pts = ray.trailPoints;
+        const n = pts.length;
+        particleCtx.beginPath();
+        const p0x = (pts[0].x / 1000) * w;
+        const p0y = (pts[0].y / 620) * h;
+        particleCtx.moveTo(p0x, p0y);
+
+        for (let i = 1; i < n; i++) {
+          const p1x = (pts[i].x / 1000) * w;
+          const p1y = (pts[i].y / 620) * h;
+          const midX = (p0x + p1x) / 2;
+          const midY = (p0y + p1y) / 2;
+          particleCtx.quadraticCurveTo(p0x, p0y, midX, midY);
+        }
+
+        const age = now - pts[n - 1].time;
+        const trailAlpha = Math.max(0, 0.42 * (1 - age / 280));
+        particleCtx.strokeStyle = `rgba(${themeColor[0]}, ${themeColor[1]}, ${themeColor[2]}, ${trailAlpha.toFixed(3)})`;
+        particleCtx.lineWidth = 1.6;
+        particleCtx.stroke();
       }
 
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.life++;
+      // 2. Draw Supernova Expanding Shockwaves
+      for (let i = shockwaves.length - 1; i >= 0; i--) {
+        const sw = shockwaves[i];
+        sw.radius += sw.growthRate;
+        const prog = sw.radius / sw.maxRadius;
+        sw.alpha = Math.max(0, 0.65 * (1 - prog * prog));
 
-        // Remove dead particles
-        if (p.life >= p.maxLife || p.y < -10) {
-          particles.splice(i, 1);
+        if (sw.alpha <= 0.01 || sw.radius >= sw.maxRadius) {
+          shockwaves.splice(i, 1);
           continue;
         }
 
-        // Update position with gentle wobble
-        p.x += p.vx + Math.sin(p.life * p.wobbleSpeed) * p.wobbleAmp;
+        particleCtx.beginPath();
+        particleCtx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+        particleCtx.strokeStyle = `rgba(${sw.color[0]}, ${sw.color[1]}, ${sw.color[2]}, ${sw.alpha.toFixed(3)})`;
+        particleCtx.lineWidth = Math.max(0.5, 2.5 * (1 - prog));
+        particleCtx.stroke();
+      }
+
+      // 3. Draw Sparkles
+      for (let i = sparkles.length - 1; i >= 0; i--) {
+        const sp = sparkles[i];
+        sp.life++;
+        if (sp.life >= sp.maxLife) {
+          sparkles.splice(i, 1);
+          continue;
+        }
+        sp.x += sp.vx;
+        sp.y += sp.vy;
+        sp.vy += 0.06; // subtle gravity
+        sp.vx *= 0.96;
+
+        const lifeRatio = 1 - (sp.life / sp.maxLife);
+        const [r, g, b] = sp.color;
+        const radius = sp.size * lifeRatio;
+
+        particleCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${(lifeRatio * 0.8).toFixed(3)})`;
+        particleCtx.beginPath();
+        particleCtx.arc(sp.x, sp.y, radius, 0, Math.PI * 2);
+        particleCtx.fill();
+      }
+
+      // 4. Draw Floating Star Dust (Celestial Bokeh)
+      for (const p of particles) {
+        p.twinklePhase += p.twinkleSpeed;
+        p.x += p.vx;
         p.y += p.vy;
 
-        // Fade in/out lifecycle
-        const lifeRatio = p.life / p.maxLife;
-        let alpha;
-        if (lifeRatio < 0.12) {
-          alpha = lifeRatio / 0.12; // Fade in
-        } else if (lifeRatio > 0.75) {
-          alpha = (1 - lifeRatio) / 0.25; // Fade out
-        } else {
-          alpha = 1;
-        }
-        alpha *= 0.45; // Overall subtlety
+        // Damping of cursor breeze
+        p.vx *= 0.985;
+        p.vy *= 0.985;
 
-        // Draw glowing particle
-        const [r, g, b] = p.color;
-        const shrink = 1 - lifeRatio * 0.3;
-        const radius = p.size * shrink;
+        // Wrap around boundaries
+        if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
+        if (p.x < -10) p.x = w + 10;
+        if (p.x > w + 10) p.x = -10;
 
-        // Outer glow
-        const grad = particleCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius * 3);
-        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.6})`);
-        grad.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, ${alpha * 0.2})`);
+        const twinkle = 0.5 + 0.5 * Math.sin(p.twinklePhase);
+        const curAlpha = p.alpha * twinkle * 0.65;
+        const [r, g, b] = themeColor;
+        const sz = p.baseSize;
+
+        // Soft outer bokeh
+        const grad = particleCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, sz * 3);
+        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${(curAlpha * 0.8).toFixed(3)})`);
+        grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${(curAlpha * 0.25).toFixed(3)})`);
         grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
         particleCtx.fillStyle = grad;
         particleCtx.beginPath();
-        particleCtx.arc(p.x, p.y, radius * 3, 0, Math.PI * 2);
+        particleCtx.arc(p.x, p.y, sz * 3, 0, Math.PI * 2);
         particleCtx.fill();
 
-        // Core bright dot
-        particleCtx.fillStyle = `rgba(${Math.min(255, r + 60)}, ${Math.min(255, g + 60)}, ${Math.min(255, b + 60)}, ${alpha * 0.9})`;
+        // Tiny pinpoint core
+        particleCtx.fillStyle = `rgba(255, 255, 255, ${(curAlpha * 0.9).toFixed(3)})`;
         particleCtx.beginPath();
-        particleCtx.arc(p.x, p.y, radius * 0.5, 0, Math.PI * 2);
+        particleCtx.arc(p.x, p.y, sz * 0.4, 0, Math.PI * 2);
         particleCtx.fill();
       }
-
-      particleAnimFrame = requestAnimationFrame(renderParticles);
     }
 
-    /* ==========================================================================
-       TRAIL AFTERGLOW SYSTEM
-       When rays rotate, they leave brief ghost trails that fade out
-       ========================================================================== */
-    const trailGroup = document.getElementById("trailGroup");
-    const activeTrails = [];
-    const MAX_TRAILS = 60;
-    let trailFrame = null;
-
-    function spawnTrail(x1, y1, x2, y2, strokeWidth) {
-      if (!trailGroup || activeTrails.length >= MAX_TRAILS) return;
-
-      const trail = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      trail.setAttribute("x1", x1);
-      trail.setAttribute("y1", y1);
-      trail.setAttribute("x2", x2.toFixed(1));
-      trail.setAttribute("y2", y2.toFixed(1));
-      trail.setAttribute("stroke", "url(#rayRadialGrad)");
-      trail.setAttribute("stroke-width", (strokeWidth * 0.6).toFixed(2));
-      trail.setAttribute("stroke-linecap", "round");
-      trail.style.opacity = "0.3";
-      trailGroup.appendChild(trail);
-
-      activeTrails.push({
-        el: trail,
-        life: 0,
-        maxLife: 18 // ~300ms at 60fps
-      });
-
-      if (!trailFrame) {
-        trailFrame = requestAnimationFrame(updateTrails);
-      }
-    }
-
-    function updateTrails() {
-      for (let i = activeTrails.length - 1; i >= 0; i--) {
-        const t = activeTrails[i];
-        t.life++;
-        const decay = 1 - (t.life / t.maxLife);
-        t.el.style.opacity = (decay * 0.3).toFixed(3);
-
-        if (t.life >= t.maxLife) {
-          t.el.remove();
-          activeTrails.splice(i, 1);
-        }
-      }
-
-      if (activeTrails.length > 0) {
-        trailFrame = requestAnimationFrame(updateTrails);
-      } else {
-        trailFrame = null;
-      }
-    }
-
-    /* ==========================================================================
-       CLICK SHOCKWAVE
-       Clicking the panel creates expanding concentric rings
-       and triggers a radial wave that pulses through the rays
-       ========================================================================== */
+    // ==========================================================================
+    // SUPERNOVA MANDALA: CLICK CASCADE & RADIAL CHORD RIPPLE
+    // ==========================================================================
     visualPanel.addEventListener("click", (e) => {
       if (toggleBtn.contains(e.target) || themeMenu.contains(e.target)) return;
       const guideContainer = document.querySelector(".integration-guide-container");
       if (guideContainer && guideContainer.contains(e.target)) return;
 
-      // Glow pulse
+      const rect = visualPanel.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // 1. Ambient Backdrop Glow Pulse
       visualPanel.classList.remove("pulse-active");
       void visualPanel.offsetWidth;
       visualPanel.classList.add("pulse-active");
       setTimeout(() => visualPanel.classList.remove("pulse-active"), 1200);
 
-      // Create expanding shockwave rings at click position
-      const rect = visualPanel.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+      // 2. Expanding Canvas Shockwave from Click Location
+      triggerShockwave(clickX, clickY);
 
-      for (let ring = 0; ring < 3; ring++) {
-        const ringEl = document.createElement("div");
-        ringEl.className = "shockwave-ring";
-        const size = 300 + ring * 200;
-        ringEl.style.width = size + "px";
-        ringEl.style.height = size + "px";
-        ringEl.style.left = clickX + "px";
-        ringEl.style.top = clickY + "px";
-        ringEl.style.animation = `shockwave-expand ${0.8 + ring * 0.3}s cubic-bezier(0.22, 1, 0.36, 1) ${ring * 0.1}s forwards`;
-
-        visualPanel.appendChild(ringEl);
-        setTimeout(() => ringEl.remove(), 1500 + ring * 300);
-      }
-
-      // Trigger radial wave through rays outward from click point
+      // 3. Supernova Mandala Wave:
+      // Find the ray closest to the click angle
       const svgClickX = (clickX / rect.width) * 1000;
       const svgClickY = (clickY / rect.height) * 620;
 
+      // Click angle relative to base origin (500, 630)
+      const clickAngleRad = Math.atan2(svgClickX - ORIGIN_X, ORIGIN_Y - svgClickY);
+      const clickAngleDeg = (clickAngleRad * 180) / Math.PI;
+
+      // Find closest ray by angle
+      let closestIdx = 100;
+      let minAngleDiff = Infinity;
       const count = rayDataList.length;
       for (let i = 0; i < count; i++) {
+        const diff = Math.abs(rayDataList[i].angleDeg - clickAngleDeg);
+        if (diff < minAngleDiff) {
+          minAngleDiff = diff;
+          closestIdx = i;
+        }
+      }
+
+      // Domino cascade rippling outward from the click origin in both directions!
+      for (let i = 0; i < count; i++) {
         const ray = rayDataList[i];
-        if (ray.isLooping) continue;
-
-        // Distance from click to ray midpoint
-        const midX = (ORIGIN_X + ray.x2) / 2;
-        const midY = (ORIGIN_Y + ray.y2) / 2;
-        const dist = Math.sqrt((svgClickX - midX) ** 2 + (svgClickY - midY) ** 2);
-
-        // Stagger the trigger based on distance — creates ripple wave effect
-        const delay = Math.min(dist * 0.6, 400);
+        const distFromCenter = Math.abs(i - closestIdx);
+        const delay = distFromCenter * 5.8; // 5.8ms per ray = ~580ms full sweep across all 200 rays
+        const dir = i >= closestIdx ? 1 : -1;
 
         setTimeout(() => {
           if (!ray.isLooping) {
-            const dir = svgClickX < midX ? -1 : 1;
-            triggerRayLoop(ray, dir);
+            triggerRayLoop(ray, dir, 700, false);
           }
         }, delay);
       }
@@ -2513,14 +2548,13 @@ Please implement this into my project now.`;
       initBackground(initialTheme);
       applyTheme(initialTheme, true);
 
-      // Start ambient breathing shimmer (delayed to let entrance finish)
-      setTimeout(() => {
-        startBreathingShimmer();
-      }, 2500);
-
-      // Initialize floating particle system
+      // Initialize floating star dust & canvas
       initParticleCanvas();
-      renderParticles();
+
+      // Launch master animation loop
+      if (!animFrameId) {
+        animFrameId = requestAnimationFrame(renderAnimationLoop);
+      }
 
       // Resize particle canvas with panel
       window.addEventListener("resize", () => {

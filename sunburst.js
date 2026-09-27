@@ -110,8 +110,10 @@ class CosmicSunburst extends HTMLElement {
     this._hasSpotlight = true;
 
     this.activeLoopRays = new Set();
+    this.activeSwayRays = new Set();
     this.rayDataList = [];
     this.animFrameId = null;
+    this._lastFrameTime = performance.now();
 
     this.mouseActive = false;
     this.targetX = 500;
@@ -392,8 +394,10 @@ class CosmicSunburst extends HTMLElement {
       this._dotsGroup.appendChild(circle);
 
       const rayObj = {
+        index: i,
         line,
         dot: circle,
+        baseLen: length,
         x2,
         y2,
         ux,
@@ -409,7 +413,9 @@ class CosmicSunburst extends HTMLElement {
         isLooping: false,
         loopStartTime: 0,
         loopDuration: this._speed,
-        loopDir: 1
+        loopDir: 1,
+        swayAngle: 0,
+        swayVel: 0
       };
 
       line.addEventListener("pointerenter", () => this._triggerRayLoop(rayObj, this.mouseDir));
@@ -583,6 +589,43 @@ class CosmicSunburst extends HTMLElement {
       this.targetOp = 0;
       this.mouseActive = false;
     });
+
+    // Supernova Mandala Wave on Click
+    this.addEventListener("click", (e) => {
+      const rect = this.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const svgClickX = (clickX / rect.width) * 1000;
+      const svgClickY = (clickY / rect.height) * 620;
+
+      const clickAngleRad = Math.atan2(svgClickX - this.ORIGIN_X, this.ORIGIN_Y - svgClickY);
+      const clickAngleDeg = (clickAngleRad * 180) / Math.PI;
+
+      let closestIdx = Math.floor(this.rayDataList.length / 2);
+      let minAngleDiff = Infinity;
+      const count = this.rayDataList.length;
+      for (let i = 0; i < count; i++) {
+        const diff = Math.abs(this.rayDataList[i].angleDeg - clickAngleDeg);
+        if (diff < minAngleDiff) {
+          minAngleDiff = diff;
+          closestIdx = i;
+        }
+      }
+
+      for (let i = 0; i < count; i++) {
+        const ray = this.rayDataList[i];
+        const distFromCenter = Math.abs(i - closestIdx);
+        const delay = distFromCenter * 5.8;
+        const dir = i >= closestIdx ? 1 : -1;
+
+        setTimeout(() => {
+          if (!ray.isLooping) {
+            this._triggerRayLoop(ray, dir, 700, false);
+          }
+        }, delay);
+      }
+    });
   }
 
   _updateMetrics() {
@@ -603,19 +646,32 @@ class CosmicSunburst extends HTMLElement {
     return (px - projX) * (px - projX) + (py - projY) * (py - projY);
   }
 
-  _triggerRayLoop(ray, direction = 1) {
+  _triggerRayLoop(ray, direction = 1, customDuration = null, triggerHarmonics = true) {
     if (ray.isLooping) return;
     const now = performance.now();
-    if (ray.lastLoopEndTime && (now - ray.lastLoopEndTime < 60)) return;
+    if (ray.lastLoopEndTime && (now - ray.lastLoopEndTime < 45)) return;
 
     ray.line.style.strokeDasharray = "none";
     ray.line.style.strokeDashoffset = "0";
 
     ray.isLooping = true;
     ray.loopStartTime = now;
-    ray.loopDuration = this._speed;
+    ray.loopDuration = customDuration || this._speed;
     ray.loopDir = direction >= 0 ? 1 : -1;
     this.activeLoopRays.add(ray);
+
+    // Sympathetic resonance (harp strum)
+    if (triggerHarmonics) {
+      const offsets = [-3, -2, -1, 1, 2, 3];
+      for (const off of offsets) {
+        const neighbor = this.rayDataList[ray.index + off];
+        if (neighbor && !neighbor.isLooping) {
+          const imp = (off > 0 ? 1 : -1) * (0.016 / Math.abs(off)) * ray.loopDir;
+          neighbor.swayVel += imp;
+          this.activeSwayRays.add(neighbor);
+        }
+      }
+    }
 
     if (!this.animFrameId) {
       this.animFrameId = requestAnimationFrame((t) => this._renderFrame(t));
@@ -623,6 +679,10 @@ class CosmicSunburst extends HTMLElement {
   }
 
   _renderFrame(timestamp) {
+    const now = timestamp || performance.now();
+    const dt = Math.min((now - (this._lastFrameTime || now)) / 1000, 0.05);
+    this._lastFrameTime = now;
+
     // 1. Ambient cursor spotlight
     if (this._hasSpotlight && this._cursorSpotlight) {
       this.currentX += (this.targetX - this.currentX) * 0.72;
@@ -633,9 +693,41 @@ class CosmicSunburst extends HTMLElement {
       this._cursorSpotlight.style.opacity = this.currentOp.toFixed(3);
     }
 
-    // 2. Fixed-Base 360-degree Top Ray Rotation Engine
+    // 2. Harmonic Sympathetic Sway (Elastic Spring Physics)
+    if (this.activeSwayRays.size > 0) {
+      const springK = 48;
+      const damping = 7.5;
+      for (const ray of this.activeSwayRays) {
+        if (ray.isLooping) {
+          this.activeSwayRays.delete(ray);
+          continue;
+        }
+        const force = -springK * ray.swayAngle - damping * ray.swayVel;
+        ray.swayVel += force * dt;
+        ray.swayAngle += ray.swayVel * dt;
+
+        if (Math.abs(ray.swayAngle) < 0.0003 && Math.abs(ray.swayVel) < 0.0003) {
+          ray.swayAngle = 0;
+          ray.swayVel = 0;
+          ray.line.setAttribute("x2", ray.x2.toFixed(1));
+          ray.line.setAttribute("y2", ray.y2.toFixed(1));
+          ray.dot.setAttribute("cx", ray.x2.toFixed(1));
+          ray.dot.setAttribute("cy", ray.y2.toFixed(1));
+          this.activeSwayRays.delete(ray);
+        } else {
+          const disp = ray.swayAngle * (ray.baseLen || 400);
+          const curX = ray.x2 + disp * ray.vx;
+          const curY = ray.y2 + disp * ray.vy;
+          ray.line.setAttribute("x2", curX.toFixed(1));
+          ray.line.setAttribute("y2", curY.toFixed(1));
+          ray.dot.setAttribute("cx", curX.toFixed(1));
+          ray.dot.setAttribute("cy", curY.toFixed(1));
+        }
+      }
+    }
+
+    // 3. Fixed-Base 360-degree Top Ray Rotation Engine
     if (this.activeLoopRays.size > 0) {
-      const now = timestamp || performance.now();
       for (const ray of this.activeLoopRays) {
         const elapsed = now - ray.loopStartTime;
         const rawProgress = elapsed / ray.loopDuration;
@@ -649,12 +741,17 @@ class CosmicSunburst extends HTMLElement {
           ray.lastLoopEndTime = now;
           this.activeLoopRays.delete(ray);
         } else {
-          // Smoothstep Hermite curve: zero velocity at start and end
           const p = rawProgress * rawProgress * (3 - 2 * rawProgress);
-          const phi = 2 * Math.PI * p; // Full 360 degree rotation
+          const phi = 2 * Math.PI * p;
 
-          const dPerp = ray.loopDir * ray.A_perp * Math.sin(phi);
-          const dPara = ray.A_para * (1 - Math.cos(phi));
+          let dPerp = ray.loopDir * ray.A_perp * Math.sin(phi) * (1 + 0.16 * Math.sin(phi));
+          let dPara = ray.A_para * (1 - Math.cos(phi)) * (0.85 + 0.15 * Math.cos(phi));
+
+          if (rawProgress > 0.82) {
+            const settleT = (rawProgress - 0.82) / 0.18;
+            const settle = Math.exp(-6 * settleT) * Math.sin(settleT * Math.PI * 4) * 2.5;
+            dPerp += ray.loopDir * settle;
+          }
 
           const curX2 = ray.x2 + dPerp * ray.vx + dPara * ray.ux;
           const curY2 = ray.y2 + dPerp * ray.vy + dPara * ray.uy;
@@ -668,8 +765,8 @@ class CosmicSunburst extends HTMLElement {
       }
     }
 
-    // 3. Keep rAF active only when rays or spotlight are in motion
-    if (this.mouseActive || this.currentOp > 0.005 || this.activeLoopRays.size > 0) {
+    // 4. Keep rAF active only when rays or spotlight are in motion
+    if (this.mouseActive || this.currentOp > 0.005 || this.activeLoopRays.size > 0 || this.activeSwayRays.size > 0) {
       this.animFrameId = requestAnimationFrame((t) => this._renderFrame(t));
     } else {
       this.currentOp = 0;
