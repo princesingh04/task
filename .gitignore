@@ -1,0 +1,13 @@
+# Media files
+*.mp4
+*.avi
+*.mov
+
+# Temporary & scratch directories
+scratch/
+.system_generated/
+*.log
+
+# OS metadata
+.DS_Store
+Thumbs.db

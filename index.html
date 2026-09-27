@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="sunrise">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Task</title>
+  <!-- Inline SVG Favicon -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%233b82f6'/%3E%3Cpath d='M16 4v6M16 22v6M4 16h6M22 16h6' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <style>
+    /* ==========================================================================
+       THEME DEFINITIONS & DESIGN TOKENS
+       ========================================================================== */
+    :root {
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-duration: 0.85s;
+    }
+
+    /* 1. PRE-DAWN: very pale blue-white background, indigo/blue lines */
+    [data-theme="pre-dawn"] {
+      --bg-start: #f1f5fa;
+      --bg-mid: #e3ebf6;
+      --bg-end: #d5e2f1;
+      --panel-bg: rgba(255, 255, 255, 0.65);
+      --panel-border: rgba(67, 85, 140, 0.16);
+      --panel-shadow: 0 20px 50px -12px rgba(40, 60, 110, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+      --title-color: #1a2238;
+      --divider-glow: rgba(79, 105, 185, 0.55);
+      --divider-shadow: rgba(79, 105, 185, 0.25);
+      --glow-core: #7c9bf8;
+      --glow-mid: #a8bffc;
+      --glow-outer: transparent;
+      --glow-opacity: 0.55;
+      --ray-start: #312e81;
+      --ray-mid: #3b82f6;
+      --ray-end: #1d4ed8;
+      --dot-color: #1e1b4b;
+      --edge-vignette-color: rgba(30, 45, 90, 0.22);
+      --edge-vignette-op: 0.45;
+      --vignette-core: rgba(99, 138, 255, 0.32);
+      --vignette-mid: rgba(99, 138, 255, 0.1);
+      --vignette-blend: normal;
+      --btn-bg: rgba(255, 255, 255, 0.8);
+      --btn-border: rgba(67, 85, 140, 0.2);
+      --btn-color: #1e293b;
+      --btn-hover-bg: #ffffff;
+      --menu-bg: rgba(255, 255, 255, 0.92);
+      --menu-border: rgba(67, 85, 140, 0.18);
+      --menu-shadow: 0 16px 36px -8px rgba(30, 45, 80, 0.18);
+      --item-hover-bg: rgba(59, 130, 246, 0.08);
+      --item-active-bg: rgba(59, 130, 246, 0.14);
+      --item-text: #1e293b;
+      --item-subtext: #64748b;
+    }
+
+    /* 2. SUNRISE: soft pink/lavender background, blue-to-pink lines */
+    [data-theme="sunrise"] {
+      --bg-start: #fdf2f4;
+      --bg-mid: #f6e2ed;
+      --bg-end: #ede0f5;
+      --panel-bg: rgba(255, 255, 255, 0.65);
+      --panel-border: rgba(219, 112, 168, 0.2);
+      --panel-shadow: 0 20px 50px -12px rgba(180, 70, 130, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+      --title-color: #26162a;
+      --divider-glow: rgba(236, 72, 153, 0.55);
+      --divider-shadow: rgba(236, 72, 153, 0.25);
+      --glow-core: #f472b6;
+      --glow-mid: #c084fc;
+      --glow-outer: transparent;
+      --glow-opacity: 0.65;
+      --ray-start: #3b82f6;
+      --ray-mid: #a855f7;
+      --ray-end: #ec4899;
+      --dot-color: #f43f5e;
+      --edge-vignette-color: rgba(140, 50, 110, 0.22);
+      --edge-vignette-op: 0.45;
+      --vignette-core: rgba(244, 114, 182, 0.35);
+      --vignette-mid: rgba(192, 132, 252, 0.12);
+      --vignette-blend: normal;
+      --btn-bg: rgba(255, 255, 255, 0.8);
+      --btn-border: rgba(219, 112, 168, 0.25);
+      --btn-color: #2d1830;
+      --btn-hover-bg: #ffffff;
+      --menu-bg: rgba(255, 255, 255, 0.92);
+      --menu-border: rgba(219, 112, 168, 0.22);
+      --menu-shadow: 0 16px 36px -8px rgba(140, 50, 100, 0.18);
+      --item-hover-bg: rgba(236, 72, 153, 0.08);
+      --item-active-bg: rgba(236, 72, 153, 0.14);
+      --item-text: #2d1830;
+      --item-subtext: #7c5874;
+    }
+
+    /* 3. DAYTIME: pale blue background, cool blue lines, bright white-blue glow */
+    [data-theme="daytime"] {
+      --bg-start: #f0f7fe;
+      --bg-mid: #def0fc;
+      --bg-end: #cbe6fa;
+      --panel-bg: rgba(255, 255, 255, 0.7);
+      --panel-border: rgba(56, 145, 225, 0.2);
+      --panel-shadow: 0 20px 50px -12px rgba(25, 110, 195, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+      --title-color: #0f243c;
+      --divider-glow: rgba(14, 140, 240, 0.55);
+      --divider-shadow: rgba(14, 140, 240, 0.25);
+      --glow-core: #ffffff;
+      --glow-mid: #b8e2fc;
+      --glow-outer: transparent;
+      --glow-opacity: 0.9;
+      --ray-start: #e0f2fe;
+      --ray-mid: #0284c7;
+      --ray-end: #0369a1;
+      --dot-color: #0284c7;
+      --edge-vignette-color: rgba(15, 75, 140, 0.2);
+      --edge-vignette-op: 0.4;
+      --vignette-core: rgba(14, 165, 233, 0.32);
+      --vignette-mid: rgba(14, 165, 233, 0.09);
+      --vignette-blend: normal;
+      --btn-bg: rgba(255, 255, 255, 0.85);
+      --btn-border: rgba(56, 145, 225, 0.24);
+      --btn-color: #0f243c;
+      --btn-hover-bg: #ffffff;
+      --menu-bg: rgba(255, 255, 255, 0.94);
+      --menu-border: rgba(56, 145, 225, 0.2);
+      --menu-shadow: 0 16px 36px -8px rgba(20, 80, 150, 0.18);
+      --item-hover-bg: rgba(2, 132, 199, 0.08);
+      --item-active-bg: rgba(2, 132, 199, 0.14);
+      --item-text: #0f243c;
+      --item-subtext: #507292;
+    }
+
+    /* 4. DUSK: purple background, purple-to-orange lines, warm orange core glow */
+    [data-theme="dusk"] {
+      --bg-start: #1c112b;
+      --bg-mid: #2a153b;
+      --bg-end: #3b1945;
+      --panel-bg: rgba(26, 15, 38, 0.72);
+      --panel-border: rgba(217, 70, 239, 0.22);
+      --panel-shadow: 0 24px 60px -15px rgba(10, 5, 20, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      --title-color: #faf0fc;
+      --divider-glow: rgba(249, 115, 22, 0.65);
+      --divider-shadow: rgba(249, 115, 22, 0.3);
+      --glow-core: #ff6800;
+      --glow-mid: #ea580c;
+      --glow-outer: transparent;
+      --glow-opacity: 0.85;
+      --ray-start: #f97316;
+      --ray-mid: #d946ef;
+      --ray-end: #8b5cf6;
+      --dot-color: #fb923c;
+      --edge-vignette-color: rgba(10, 4, 18, 0.82);
+      --edge-vignette-op: 0.82;
+      --vignette-core: rgba(249, 115, 22, 0.45);
+      --vignette-mid: rgba(217, 70, 239, 0.18);
+      --vignette-blend: screen;
+      --btn-bg: rgba(42, 23, 60, 0.75);
+      --btn-border: rgba(217, 70, 239, 0.3);
+      --btn-color: #f5d0fe;
+      --btn-hover-bg: rgba(60, 32, 85, 0.9);
+      --menu-bg: rgba(30, 18, 44, 0.94);
+      --menu-border: rgba(217, 70, 239, 0.28);
+      --menu-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.55);
+      --item-hover-bg: rgba(217, 70, 239, 0.14);
+      --item-active-bg: rgba(249, 115, 22, 0.22);
+      --item-text: #f5d0fe;
+      --item-subtext: #c084fc;
+    }
+
+    /* 5. SUNSET: deep blue/indigo background, white-to-light-blue lines, bright white core */
+    [data-theme="sunset"] {
+      --bg-start: #080d1e;
+      --bg-mid: #0e1633;
+      --bg-end: #152048;
+      --panel-bg: rgba(12, 19, 44, 0.75);
+      --panel-border: rgba(125, 175, 250, 0.22);
+      --panel-shadow: 0 24px 60px -15px rgba(2, 5, 16, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      --title-color: #f8fafc;
+      --divider-glow: rgba(255, 255, 255, 0.65);
+      --divider-shadow: rgba(147, 197, 253, 0.35);
+      --glow-core: #ffffff;
+      --glow-mid: #93c5fd;
+      --glow-outer: transparent;
+      --glow-opacity: 0.92;
+      --ray-start: #ffffff;
+      --ray-mid: #bfdbfe;
+      --ray-end: #60a5fa;
+      --dot-color: #e0f2fe;
+      --edge-vignette-color: rgba(2, 5, 16, 0.88);
+      --edge-vignette-op: 0.88;
+      --vignette-core: rgba(147, 197, 253, 0.42);
+      --vignette-mid: rgba(96, 165, 250, 0.16);
+      --vignette-blend: screen;
+      --btn-bg: rgba(22, 33, 72, 0.75);
+      --btn-border: rgba(125, 175, 250, 0.3);
+      --btn-color: #f1f5f9;
+      --btn-hover-bg: rgba(30, 48, 102, 0.9);
+      --menu-bg: rgba(14, 22, 50, 0.94);
+      --menu-border: rgba(125, 175, 250, 0.26);
+      --menu-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.6);
+      --item-hover-bg: rgba(96, 165, 250, 0.15);
+      --item-active-bg: rgba(96, 165, 250, 0.24);
+      --item-text: #f1f5f9;
+      --item-subtext: #94a3b8;
+    }
+
+    /* 6. NIGHT: warm white/cream background, pink-to-purple-to-orange gradient lines */
+    [data-theme="night"] {
+      --bg-start: #faf6f0;
+      --bg-mid: #f3ece2;
+      --bg-end: #ebdcd0;
+      --panel-bg: rgba(255, 255, 255, 0.68);
+      --panel-border: rgba(185, 140, 110, 0.2);
+      --panel-shadow: 0 20px 50px -12px rgba(110, 75, 50, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+      --title-color: #271a15;
+      --divider-glow: rgba(217, 70, 239, 0.5);
+      --divider-shadow: rgba(249, 115, 22, 0.25);
+      --glow-core: #f472b6;
+      --glow-mid: #fdba74;
+      --glow-outer: transparent;
+      --glow-opacity: 0.6;
+      --ray-start: #f43f5e;
+      --ray-mid: #9333ea;
+      --ray-end: #ea580c;
+      --dot-color: #e11d48;
+      --edge-vignette-color: rgba(100, 70, 50, 0.22);
+      --edge-vignette-op: 0.45;
+      --vignette-core: rgba(236, 72, 153, 0.3);
+      --vignette-mid: rgba(249, 115, 22, 0.1);
+      --vignette-blend: normal;
+      --btn-bg: rgba(255, 255, 255, 0.85);
+      --btn-border: rgba(185, 140, 110, 0.24);
+      --btn-color: #271a15;
+      --btn-hover-bg: #ffffff;
+      --menu-bg: rgba(255, 255, 255, 0.94);
+      --menu-border: rgba(185, 140, 110, 0.22);
+      --menu-shadow: 0 16px 36px -8px rgba(90, 60, 40, 0.16);
+      --item-hover-bg: rgba(217, 70, 239, 0.08);
+      --item-active-bg: rgba(249, 115, 22, 0.14);
+      --item-text: #271a15;
+      --item-subtext: #78655b;
+    }
+
+    /* ==========================================================================
+       GLOBAL RESETS & FULL-BLEED BACKGROUND LAYERS
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      font-family: var(--font-stack);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+      color: var(--title-color);
+    }
+
+    /* Dual background canvases for ultra-smooth cross-fading */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+      transition: opacity var(--transition-duration) var(--ease-smooth);
+    }
+
+    #bgLayerA {
+      opacity: 1;
+    }
+
+    #bgLayerB {
+      opacity: 0;
+    }
+
+    /* ==========================================================================
+       LAYOUT: CENTERED COLUMN & HEADER
+       ========================================================================== */
+    .app-wrapper {
+      height: 100vh;
+      min-height: 100vh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 24px 28px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .content-column {
+      width: 100%;
+      max-width: 900px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .header-area {
+      flex-shrink: 0;
+      text-align: center;
+      padding-top: 4px;
+      padding-bottom: 2px;
+    }
+
+    .title {
+      font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: var(--title-color);
+      transition: color var(--transition-duration) var(--ease-smooth);
+      user-select: none;
+      animation: title-reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes title-reveal {
+      0% {
+        opacity: 0;
+        transform: translateY(-16px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .divider-line {
+      flex-shrink: 0;
+      width: 100%;
+      height: 1.5px;
+      margin: 18px 0 20px 0;
+      border: none;
+      background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        var(--divider-glow) 25%,
+        var(--divider-glow) 75%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      box-shadow: 0 0 14px var(--divider-shadow);
+      transform-origin: center;
+      animation: divider-reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both,
+                 divider-glow-pulse 6s ease-in-out 1.4s infinite alternate;
+      transition: background var(--transition-duration) var(--ease-smooth),
+                  box-shadow var(--transition-duration) var(--ease-smooth);
+    }
+
+    @keyframes divider-reveal {
+      0% {
+        opacity: 0;
+        transform: scaleX(0);
+      }
+      100% {
+        opacity: 1;
+        transform: scaleX(1);
+      }
+    }
+
+    @keyframes divider-glow-pulse {
+      0% {
+        box-shadow: 0 0 10px var(--divider-shadow);
+        opacity: 0.85;
+      }
+      100% {
+        box-shadow: 0 0 22px var(--divider-glow), 0 0 6px var(--divider-glow);
+        opacity: 1;
+      }
+    }
+
+    /* ==========================================================================
+       VISUAL PANEL
+       ========================================================================== */
+    .visual-panel {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      height: 100%;
+      width: 100%;
+      border-radius: 20px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--panel-shadow);
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      cursor: default;
+      animation: panel-reveal 1.25s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+      transition: background var(--transition-duration) var(--ease-smooth),
+                  border-color var(--transition-duration) var(--ease-smooth),
+                  box-shadow var(--transition-duration) var(--ease-smooth);
+    }
+
+    @keyframes panel-reveal {
+      0% {
+        opacity: 0;
+        transform: translateY(16px) scale(0.992);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* ==========================================================================
+       ANTIGRAVITY UI VIGNETTE & SPOTLIGHT LAYERS
+       ========================================================================== */
+    /* 1. Cinematic perimeter edge vignette */
+    .panel-edge-vignette {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      pointer-events: none;
+      background: radial-gradient(
+        ellipse 90% 80% at 50% 50%,
+        transparent 45%,
+        var(--edge-vignette-color) 100%
+      );
+      opacity: var(--edge-vignette-op, 0.5);
+      z-index: 5;
+      transition: background var(--transition-duration) var(--ease-smooth),
+                  opacity var(--transition-duration) var(--ease-smooth);
+    }
+
+    /* 2. Hardware-accelerated cursor spotlight (Antigravity UI style) */
+    .cursor-spotlight {
+      position: absolute;
+      width: 660px;
+      height: 660px;
+      top: -330px;
+      left: -330px;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(
+        circle,
+        var(--vignette-core) 0%,
+        var(--vignette-mid) 45%,
+        transparent 75%
+      );
+      z-index: 6;
+      will-change: transform, opacity;
+      transform: translate3d(-1000px, -1000px, 0);
+      opacity: 0;
+    }
+
+    /* Soft ambient central glow backdrop */
+    .glow-backdrop {
+      position: absolute;
+      bottom: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 580px;
+      height: 580px;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle at 50% 90%,
+        var(--glow-core) 0%,
+        var(--glow-mid) 40%,
+        transparent 75%
+      );
+      opacity: var(--glow-opacity);
+      pointer-events: none;
+      transition: background var(--transition-duration) var(--ease-smooth),
+                  opacity var(--transition-duration) var(--ease-smooth);
+    }
+
+    /* Sunburst SVG container */
+    .sunburst-svg {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: block;
+    }
+
+    /* Burst rays */
+    .burst-ray {
+      stroke: url(#rayRadialGrad);
+      stroke-linecap: round;
+      animation: ray-shoot 1.3s cubic-bezier(0.16, 1, 0.3, 1) var(--shoot-del, 0s) both;
+      transition: opacity var(--transition-duration) var(--ease-smooth);
+    }
+
+    @keyframes ray-shoot {
+      0% {
+        stroke-dashoffset: var(--len);
+        opacity: 0;
+      }
+      20% {
+        opacity: var(--base-op);
+      }
+      100% {
+        stroke-dashoffset: 0;
+        opacity: var(--base-op);
+      }
+    }
+
+    /* Burst dots */
+    .burst-dot {
+      fill: var(--dot-color);
+      animation: dot-bloom 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--shoot-del, 0s) + 0.75s) both;
+      transition: fill var(--transition-duration) var(--ease-smooth),
+                  opacity var(--transition-duration) var(--ease-smooth);
+    }
+
+    @keyframes dot-bloom {
+      0% {
+        opacity: 0;
+        transform: scale(0);
+      }
+      70% {
+        opacity: 1;
+        transform: scale(1.45);
+      }
+      100% {
+        opacity: var(--base-op);
+        transform: scale(1);
+      }
+    }
+
+    /* Ray lines and dots */
+    .burst-ray, .burst-dot {
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    /* Click ripple wave */
+    .visual-panel.pulse-active .glow-backdrop {
+      transform: translateX(-50%) scale(1.22);
+      opacity: 1;
+    }
+    .visual-panel.pulse-active .burst-ray {
+      filter: drop-shadow(0 0 5px var(--divider-glow));
+    }
+    .visual-panel.pulse-active .burst-dot {
+      transform: scale(1.4);
+    }
+
+    /* Theme switching ripple wave */
+    .sunburst-svg.theme-switching .burst-ray {
+      filter: drop-shadow(0 0 6px var(--divider-glow));
+    }
+    .sunburst-svg.theme-switching .burst-dot {
+      transform: scale(1.35);
+    }
+
+    /* Icon 360 spin animation */
+    .spin-anim {
+      animation: icon-spin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes icon-spin {
+      0% {
+        transform: rotate(0deg) scale(0.75);
+        opacity: 0.4;
+      }
+      100% {
+        transform: rotate(360deg) scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* SVG stop colors smooth transition */
+    stop {
+      transition: stop-color var(--transition-duration) var(--ease-smooth),
+                  stop-opacity var(--transition-duration) var(--ease-smooth);
+    }
+
+    /* ==========================================================================
+       THEME TOGGLE BUTTON & DROPDOWN MENU
+       ========================================================================== */
+    .theme-control-container {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 50;
+    }
+
+    .theme-toggle-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      color: var(--btn-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      transition: background 0.25s ease,
+                  border-color 0.25s ease,
+                  transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.25s ease,
+                  color var(--transition-duration) var(--ease-smooth);
+      outline: none;
+    }
+
+    .theme-toggle-btn:hover {
+      background: var(--btn-hover-bg);
+      transform: translateY(-1px) scale(1.04);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    .theme-toggle-btn:focus-visible {
+      ring: 2px solid var(--divider-glow);
+      outline: 2px solid var(--divider-glow);
+      outline-offset: 2px;
+    }
+
+    .theme-toggle-btn:active {
+      transform: scale(0.96);
+    }
+
+    .theme-btn-icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      transition: transform 0.4s var(--ease-smooth);
+    }
+
+    .theme-toggle-btn[aria-expanded="true"] .theme-btn-icon-wrapper {
+      transform: rotate(30deg);
+    }
+
+    /* Dropdown popover menu */
+    .theme-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 218px;
+      background: var(--menu-bg);
+      border: 1px solid var(--menu-border);
+      border-radius: 16px;
+      padding: 6px;
+      box-shadow: var(--menu-shadow);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      opacity: 0;
+      transform: translateY(-8px) scale(0.96);
+      pointer-events: none;
+      visibility: hidden;
+      transition: opacity 0.22s var(--ease-smooth),
+                  transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1),
+                  visibility 0.22s ease;
+      z-index: 100;
+    }
+
+    .theme-menu.is-open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      visibility: visible;
+    }
+
+    .theme-option {
+      width: 100%;
+      border: none;
+      background: transparent;
+      padding: 9px 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+      color: var(--item-text);
+      transition: background 0.16s ease, transform 0.16s ease;
+      position: relative;
+    }
+
+    .theme-option:hover {
+      background: var(--item-hover-bg);
+      transform: translateX(2px);
+    }
+
+    .theme-option:focus-visible {
+      outline: 2px solid var(--divider-glow);
+      outline-offset: -1px;
+    }
+
+    .theme-option.is-active {
+      background: var(--item-active-bg);
+      font-weight: 600;
+    }
+
+    .option-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .option-label {
+      flex: 1;
+      font-size: 0.88rem;
+      letter-spacing: -0.01em;
+    }
+
+    .option-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .option-check {
+      width: 14px;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.6);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      color: var(--title-color);
+    }
+
+    .theme-option.is-active .option-check {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Small subtle instructions hint for keyboard accessibility */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+      .app-wrapper {
+        padding: 20px 14px 20px;
+      }
+      .visual-panel {
+        min-height: 420px;
+        border-radius: 16px;
+      }
+      .title {
+        font-size: 2.1rem;
+      }
+      .divider-line {
+        margin: 16px 0 18px 0;
+      }
+      .theme-menu {
+        width: 196px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Full-bleed background crossfade layers -->
+  <div class="bg-layer" id="bgLayerA"></div>
+  <div class="bg-layer" id="bgLayerB"></div>
+
+  <div class="app-wrapper">
+    <div class="content-column">
+      <!-- HEADER -->
+      <header class="header-area">
+        <h1 class="title">The Task</h1>
+      </header>
+
+      <!-- DIVIDER LINE -->
+      <hr class="divider-line" aria-hidden="true" />
+
+      <!-- VISUAL PANEL -->
+      <main class="visual-panel" aria-label="Aesthetic Sunburst Visual Panel">
+        <!-- THEME DROPDOWN TOGGLE -->
+        <div class="theme-control-container">
+          <button
+            id="themeToggleBtn"
+            class="theme-toggle-btn"
+            type="button"
+            aria-label="Select Theme (Current: Sunrise)"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="themeMenu"
+            title="Choose time-of-day theme"
+          >
+            <span class="theme-btn-icon-wrapper" id="themeBtnIcon" aria-hidden="true">
+              <!-- SVG icon inserted by JS -->
+            </span>
+          </button>
+
+          <div
+            id="themeMenu"
+            class="theme-menu"
+            role="menu"
+            aria-label="Time of Day Themes"
+          >
+            <!-- 6 Options rendered dynamically with clean SVGs -->
+          </div>
+        </div>
+
+        <!-- CINEMATIC PERIMETER VIGNETTE (Antigravity UI) -->
+        <div class="panel-edge-vignette" aria-hidden="true"></div>
+
+        <!-- DYNAMIC HARDWARE-ACCELERATED CURSOR SPOTLIGHT -->
+        <div class="cursor-spotlight" id="cursorSpotlight" aria-hidden="true"></div>
+
+        <!-- AMBIENT RADIAL GLOW -->
+        <div class="glow-backdrop" aria-hidden="true"></div>
+
+        <!-- RADIAL SUNBURST SVG -->
+        <svg
+          id="sunburstSvg"
+          class="sunburst-svg"
+          viewBox="0 0 1000 620"
+          preserveAspectRatio="xMidYMax meet"
+          aria-hidden="true"
+        >
+          <defs>
+            <!-- Ray Radial Gradient -->
+            <radialGradient
+              id="rayRadialGrad"
+              cx="500"
+              cy="630"
+              r="620"
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop id="rayStopStart" offset="0%" stop-color="var(--ray-start)" />
+              <stop id="rayStopMid" offset="45%" stop-color="var(--ray-mid)" />
+              <stop id="rayStopEnd" offset="100%" stop-color="var(--ray-end)" />
+            </radialGradient>
+
+            <!-- SVG Inner Core Glow -->
+            <radialGradient
+              id="svgCoreGlow"
+              cx="500"
+              cy="630"
+              r="480"
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop id="glowStopCore" offset="0%" stop-color="var(--glow-core)" stop-opacity="0.8" />
+              <stop id="glowStopMid" offset="30%" stop-color="var(--glow-mid)" stop-opacity="0.45" />
+              <stop id="glowStopOuter" offset="75%" stop-color="var(--glow-core)" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+
+          <!-- Radial Glow Disk behind rays -->
+          <circle cx="500" cy="630" r="480" fill="url(#svgCoreGlow)" />
+
+          <!-- Dynamic SVG groups for rays and dots -->
+          <g id="raysGroup"></g>
+          <g id="dotsGroup"></g>
+        </svg>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       THEME CONFIGURATIONS & SVG ICONS
+       ========================================================================== */
+    const THEMES = [
+      {
+        id: "pre-dawn",
+        name: "Pre-dawn",
+        desc: "Indigo and soft twilight",
+        bgGradient: "linear-gradient(175deg, #f1f5fa 0%, #e3ebf6 50%, #d5e2f1 100%)",
+        swatch: "linear-gradient(135deg, #f1f5fa, #312e81)",
+        stops: {
+          rayStart: "#312e81",
+          rayMid: "#3b82f6",
+          rayEnd: "#1d4ed8",
+          glowCore: "#7c9bf8",
+          glowMid: "#a8bffc"
+        },
+        // Eye / waking moon-ish icon
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <path d="M2 12s3.8-7 10-7 10 7 10 7-3.8 7-10 7-10-7-10-7Z"/>
+          <path d="M12 9a3 3 0 1 0 3 3"/>
+        </svg>`
+      },
+      {
+        id: "sunrise",
+        name: "Sunrise",
+        desc: "Morning rose & lavender",
+        bgGradient: "linear-gradient(175deg, #fdf2f4 0%, #f6e2ed 50%, #ede0f5 100%)",
+        swatch: "linear-gradient(135deg, #3b82f6, #ec4899)",
+        stops: {
+          rayStart: "#3b82f6",
+          rayMid: "#a855f7",
+          rayEnd: "#ec4899",
+          glowCore: "#f472b6",
+          glowMid: "#c084fc"
+        },
+        // Sun rising over horizon icon
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <path d="M4 18h16"/>
+          <path d="M8 18a4 4 0 0 1 8 0"/>
+          <path d="M12 4v5"/>
+          <path d="M5.5 11l2.5 2.5"/>
+          <path d="M18.5 11l-2.5 2.5"/>
+        </svg>`
+      },
+      {
+        id: "daytime",
+        name: "Daytime",
+        desc: "Crisp blue daylight",
+        bgGradient: "linear-gradient(175deg, #f0f7fe 0%, #def0fc 50%, #cbe6fa 100%)",
+        swatch: "linear-gradient(135deg, #ffffff, #0284c7)",
+        stops: {
+          rayStart: "#e0f2fe",
+          rayMid: "#0284c7",
+          rayEnd: "#0369a1",
+          glowCore: "#ffffff",
+          glowMid: "#b8e2fc"
+        },
+        // Full radiant sun icon
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2"/>
+          <path d="M12 20v2"/>
+          <path d="m4.93 4.93 1.41 1.41"/>
+          <path d="m17.66 17.66 1.41 1.41"/>
+          <path d="M2 12h2"/>
+          <path d="M20 12h2"/>
+          <path d="m4.93 19.07 1.41-1.41"/>
+          <path d="m17.66 6.34 1.41-1.41"/>
+        </svg>`
+      },
+      {
+        id: "dusk",
+        name: "Dusk",
+        desc: "Twilight purple & embers",
+        bgGradient: "linear-gradient(175deg, #1c112b 0%, #2a153b 50%, #3b1945 100%)",
+        swatch: "linear-gradient(135deg, #ff6800, #d946ef)",
+        stops: {
+          rayStart: "#f97316",
+          rayMid: "#d946ef",
+          rayEnd: "#8b5cf6",
+          glowCore: "#ff6800",
+          glowMid: "#ea580c"
+        },
+        // Half-sun sinking icon
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <path d="M4 17h16"/>
+          <path d="M8 17a4 4 0 0 1 8 0"/>
+          <path d="M12 7v4"/>
+          <path d="M6 10l2 2"/>
+          <path d="M18 10l-2 2"/>
+        </svg>`
+      },
+      {
+        id: "sunset",
+        name: "Sunset",
+        desc: "Midnight sky & starlight",
+        bgGradient: "linear-gradient(175deg, #080d1e 0%, #0e1633 50%, #152048 100%)",
+        swatch: "linear-gradient(135deg, #ffffff, #60a5fa)",
+        stops: {
+          rayStart: "#ffffff",
+          rayMid: "#bfdbfe",
+          rayEnd: "#60a5fa",
+          glowCore: "#ffffff",
+          glowMid: "#93c5fd"
+        },
+        // Sun-lower below horizon icon
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <path d="M3 19h18"/>
+          <path d="M9 19a3 3 0 0 1 6 0"/>
+          <path d="M12 4v7"/>
+          <path d="m9 8 3 3 3-3"/>
+        </svg>`
+      },
+      {
+        id: "night",
+        name: "Night",
+        desc: "Warm cream & vibrant aurora",
+        bgGradient: "linear-gradient(175deg, #faf6f0 0%, #f3ece2 50%, #ebdcd0 100%)",
+        swatch: "linear-gradient(135deg, #f43f5e, #9333ea, #ea580c)",
+        stops: {
+          rayStart: "#f43f5e",
+          rayMid: "#9333ea",
+          rayEnd: "#ea580c",
+          glowCore: "#f472b6",
+          glowMid: "#fdba74"
+        },
+        // Crescent moon icon
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          <circle cx="18" cy="6" r="1" fill="currentColor"/>
+        </svg>`
+      }
+    ];
+
+    /* ==========================================================================
+       SUNBURST GENERATION (200 RAYS)
+       ========================================================================== */
+    const RAY_COUNT = 200;
+    const ORIGIN_X = 500;
+    const ORIGIN_Y = 630; // Just below visible panel floor (viewBox height 620)
+    const ANGLE_SPAN = 168; // Roughly 180° arc (-84° to +84°)
+
+    // Deterministic pseudo-random generator for balanced, repeatable aesthetics
+    function createPRNG(seed) {
+      let s = seed % 2147483647;
+      if (s <= 0) s += 2147483646;
+      return function() {
+        s = (s * 16807) % 2147483647;
+        return (s - 1) / 2147483646;
+      };
+    }
+
+    const prng = createPRNG(4281);
+
+    let rayDataList = [];
+
+    function buildSunburst() {
+      const raysGroup = document.getElementById("raysGroup");
+      const dotsGroup = document.getElementById("dotsGroup");
+      raysGroup.innerHTML = "";
+      dotsGroup.innerHTML = "";
+      rayDataList = [];
+
+      const halfSpan = ANGLE_SPAN / 2;
+
+      for (let i = 0; i < RAY_COUNT; i++) {
+        const t = i / (RAY_COUNT - 1);
+        // Base angle spanning -84° to +84°
+        const baseAngleDeg = -halfSpan + t * ANGLE_SPAN;
+        // Subtle organic angle jitter so it doesn't look mechanical
+        const jitter = (prng() - 0.5) * 0.45;
+        const angleDeg = baseAngleDeg + jitter;
+        const angleRad = (angleDeg * Math.PI) / 180;
+        const sinA = Math.sin(angleRad);
+        const cosA = Math.cos(angleRad);
+
+        // Center closeness factor: 1.0 at center, ~0.17 at sides
+        const centerFactor = Math.cos(angleRad);
+        const normAngle = Math.abs(angleDeg) / halfSpan; // 0 to 1
+
+        // Base envelope length: near top (up to 595px), tapering slightly at extreme sides
+        const maxReachable = 595 - 118 * Math.pow(normAngle, 1.75);
+
+        // Multi-tier rhythmic lengths
+        const tierRoll = prng();
+        let length;
+        let dotRadius;
+
+        if (tierRoll > 0.72) {
+          // Tier 1: Towering spires reaching near top of panel (28%)
+          length = maxReachable * (0.92 + prng() * 0.08);
+          dotRadius = 2.2 + prng() * 0.35; // 4.4 - 5.1px diameter
+        } else if (tierRoll > 0.40) {
+          // Tier 2: Medium-long rays (32%)
+          length = maxReachable * (0.68 + prng() * 0.20);
+          dotRadius = 1.7 + prng() * 0.4; // 3.4 - 4.2px diameter
+        } else if (tierRoll > 0.18) {
+          // Tier 3: Medium rays (22%)
+          length = maxReachable * (0.45 + prng() * 0.18);
+          dotRadius = 1.35 + prng() * 0.35; // 2.7 - 3.4px diameter
+        } else {
+          // Tier 4: Short dense rays (18%)
+          length = maxReachable * (0.24 + prng() * 0.17);
+          dotRadius = 1.05 + prng() * 0.3; // 2.1 - 2.7px diameter
+        }
+
+        // Ray tip coordinates
+        const x2 = ORIGIN_X + length * sinA;
+        const y2 = ORIGIN_Y - length * cosA;
+
+        // Center brightness & side fading:
+        // Center lines are brighter/more saturated; side lines fade gracefully
+        const baseOpacity = parseFloat((0.28 + 0.70 * Math.pow(centerFactor, 1.25)).toFixed(3));
+        const strokeWidth = parseFloat((0.85 + 0.45 * Math.pow(centerFactor, 1.5)).toFixed(2));
+
+        // Staggered shoot delay: center rays fan first, cascading outward to sides
+        const distFromCenter = Math.abs(angleDeg) / halfSpan;
+        const shootDelay = (0.12 + distFromCenter * 0.58 + prng() * 0.08).toFixed(3);
+
+        // Shimmer timing: varied durations and negative offsets
+        const duration = (3.8 + prng() * 4.6).toFixed(2);
+        const delay = (-prng() * 8.0).toFixed(2);
+
+        // Unit vector along ray (outward from base to tip)
+        const ux = sinA;
+        const uy = -cosA;
+
+        // Unit vector perpendicular to ray (to the right)
+        const vx = cosA;
+        const vy = sinA;
+
+        // 360-degree top loop amplitudes
+        const A_para = Math.min(42, length * 0.08 + 10);
+        const A_perp = Math.min(28, length * 0.055 + 7);
+
+        // Create Ray Line (fixed base at ORIGIN_X, ORIGIN_Y)
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("class", "burst-ray");
+        line.setAttribute("x1", ORIGIN_X);
+        line.setAttribute("y1", ORIGIN_Y);
+        line.setAttribute("x2", x2.toFixed(1));
+        line.setAttribute("y2", y2.toFixed(1));
+        line.setAttribute("stroke-width", strokeWidth);
+        line.setAttribute("data-angle", angleDeg.toFixed(2));
+        line.setAttribute("data-base-w", strokeWidth);
+        line.style.setProperty("--len", `${length.toFixed(1)}px`);
+        line.style.setProperty("--shoot-del", `${shootDelay}s`);
+        line.style.setProperty("--base-op", baseOpacity);
+        line.style.setProperty("--dur", `${duration}s`);
+        line.style.setProperty("--del", `${delay}s`);
+        line.style.strokeDasharray = `${length.toFixed(1)}px`;
+        line.style.strokeDashoffset = `${length.toFixed(1)}px`;
+
+        raysGroup.appendChild(line);
+
+        // Create End Dot
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("class", "burst-dot");
+        circle.setAttribute("cx", x2.toFixed(1));
+        circle.setAttribute("cy", y2.toFixed(1));
+        circle.setAttribute("r", dotRadius.toFixed(2));
+        circle.setAttribute("data-angle", angleDeg.toFixed(2));
+        circle.style.setProperty("--shoot-del", `${shootDelay}s`);
+        circle.style.setProperty("--base-op", baseOpacity);
+        circle.style.setProperty("--dur", `${duration}s`);
+        circle.style.setProperty("--del", `${delay}s`);
+
+        dotsGroup.appendChild(circle);
+
+        const rayObj = {
+          line,
+          dot: circle,
+          angleRad,
+          angleDeg,
+          baseLen: length,
+          x2,
+          y2,
+          ux,
+          uy,
+          vx,
+          vy,
+          A_para,
+          A_perp,
+          minX: Math.min(ORIGIN_X, x2),
+          maxX: Math.max(ORIGIN_X, x2),
+          minY: Math.min(ORIGIN_Y, y2),
+          maxY: Math.max(ORIGIN_Y, y2),
+          isLooping: false,
+          loopStartTime: 0,
+          loopDuration: 0,
+          loopDir: 1
+        };
+
+        // Direct hover on this ray or dot
+        line.addEventListener("pointerenter", () => triggerRayLoop(rayObj, mouseDir));
+        circle.addEventListener("pointerenter", () => triggerRayLoop(rayObj, mouseDir));
+
+        rayDataList.push(rayObj);
+      }
+
+      // After initial entrance animation settles (~2.3s), clear dasharray
+      setTimeout(() => {
+        if (rayDataList && rayDataList.length) {
+          rayDataList.forEach(r => {
+            r.line.style.strokeDasharray = "none";
+            r.line.style.strokeDashoffset = "0";
+          });
+        }
+      }, 2300);
+    }
+
+
+
+    /* ==========================================================================
+       THEME MANAGEMENT & SMOOTH TRANSITIONS
+       ========================================================================== */
+    let currentThemeId = "sunrise";
+    let activeBgLayer = "A";
+
+    function initBackground(themeId = currentThemeId) {
+      const initialTheme = THEMES.find(t => t.id === themeId) || THEMES[1];
+      const bgA = document.getElementById("bgLayerA");
+      const bgB = document.getElementById("bgLayerB");
+      bgA.style.background = initialTheme.bgGradient;
+      bgA.style.opacity = "1";
+      bgB.style.opacity = "0";
+    }
+
+    function applyTheme(themeId, isInitial = false) {
+      const theme = THEMES.find(t => t.id === themeId);
+      if (!theme) return;
+      currentThemeId = themeId;
+
+      try {
+        localStorage.setItem("the-task-theme", themeId);
+      } catch (e) {}
+
+      // 1. Update HTML data-theme attribute
+      document.documentElement.dataset.theme = themeId;
+
+      // 2. Smoothly crossfade page background gradient
+      const bgA = document.getElementById("bgLayerA");
+      const bgB = document.getElementById("bgLayerB");
+      if (isInitial) {
+        bgA.style.background = theme.bgGradient;
+        bgA.style.opacity = "1";
+        bgB.style.opacity = "0";
+        activeBgLayer = "A";
+      } else {
+        if (activeBgLayer === "A") {
+          bgB.style.background = theme.bgGradient;
+          bgB.style.opacity = "1";
+          bgA.style.opacity = "0";
+          activeBgLayer = "B";
+        } else {
+          bgA.style.background = theme.bgGradient;
+          bgA.style.opacity = "1";
+          bgB.style.opacity = "0";
+          activeBgLayer = "A";
+        }
+
+        // Trigger wave ripple
+        const svg = document.getElementById("sunburstSvg");
+        svg.classList.add("theme-switching");
+        setTimeout(() => svg.classList.remove("theme-switching"), 850);
+      }
+
+      // 3. Update Toggle Button Icon & Label + Trigger Spin
+      const iconContainer = document.getElementById("themeBtnIcon");
+      iconContainer.innerHTML = theme.icon;
+      if (!isInitial) {
+        iconContainer.classList.remove("spin-anim");
+        void iconContainer.offsetWidth; // re-trigger animation
+        iconContainer.classList.add("spin-anim");
+      }
+
+      const toggleBtn = document.getElementById("themeToggleBtn");
+      toggleBtn.setAttribute("aria-label", `Current theme: ${theme.name}. Click to change theme.`);
+
+      // 4. Update Menu Active Items
+      document.querySelectorAll(".theme-option").forEach(opt => {
+        const optThemeId = opt.getAttribute("data-theme-id");
+        const isActive = optThemeId === themeId;
+        opt.classList.toggle("is-active", isActive);
+        opt.setAttribute("aria-checked", isActive ? "true" : "false");
+      });
+
+      // 5. Direct gradient stop update for full cross-browser reliability
+      updateSvgGradientStops(theme.stops);
+    }
+
+    function cycleTheme() {
+      const currentIndex = THEMES.findIndex(t => t.id === currentThemeId);
+      const nextTheme = THEMES[(currentIndex + 1) % THEMES.length];
+      applyTheme(nextTheme.id);
+    }
+
+    // Direct stop-color update ensures smooth SVG color shift in all browsers
+    function updateSvgGradientStops(stops) {
+      const rayStart = document.getElementById("rayStopStart");
+      const rayMid = document.getElementById("rayStopMid");
+      const rayEnd = document.getElementById("rayStopEnd");
+      const glowCore = document.getElementById("glowStopCore");
+      const glowMid = document.getElementById("glowStopMid");
+      const glowOuter = document.getElementById("glowStopOuter");
+
+      if (rayStart) rayStart.setAttribute("stop-color", stops.rayStart);
+      if (rayMid) rayMid.setAttribute("stop-color", stops.rayMid);
+      if (rayEnd) rayEnd.setAttribute("stop-color", stops.rayEnd);
+      if (glowCore) glowCore.setAttribute("stop-color", stops.glowCore);
+      if (glowMid) glowMid.setAttribute("stop-color", stops.glowMid);
+      if (glowOuter) glowOuter.setAttribute("stop-color", stops.glowCore);
+    }
+
+    /* ==========================================================================
+       MENU & INTERACTIVITY
+       ========================================================================== */
+    const toggleBtn = document.getElementById("themeToggleBtn");
+    const themeMenu = document.getElementById("themeMenu");
+
+    function renderThemeMenu() {
+      themeMenu.innerHTML = "";
+      THEMES.forEach(t => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `theme-option ${t.id === currentThemeId ? "is-active" : ""}`;
+        btn.setAttribute("role", "menuitemradio");
+        btn.setAttribute("aria-checked", t.id === currentThemeId ? "true" : "false");
+        btn.setAttribute("data-theme-id", t.id);
+
+        btn.innerHTML = `
+          <span class="option-icon" aria-hidden="true">${t.icon}</span>
+          <span class="option-label">${t.name}</span>
+          <span class="option-swatch" style="background: ${t.swatch}" aria-hidden="true"></span>
+          <span class="option-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </span>
+        `;
+
+        btn.addEventListener("click", () => {
+          applyTheme(t.id);
+          closeThemeMenu();
+          toggleBtn.focus();
+        });
+
+        themeMenu.appendChild(btn);
+      });
+    }
+
+    function openThemeMenu() {
+      themeMenu.classList.add("is-open");
+      toggleBtn.setAttribute("aria-expanded", "true");
+      // Focus current active item
+      const activeItem = themeMenu.querySelector(".theme-option.is-active") || themeMenu.querySelector(".theme-option");
+      if (activeItem) activeItem.focus();
+    }
+
+    function closeThemeMenu() {
+      themeMenu.classList.remove("is-open");
+      toggleBtn.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleThemeMenu() {
+      if (themeMenu.classList.contains("is-open")) {
+        closeThemeMenu();
+      } else {
+        openThemeMenu();
+      }
+    }
+
+    // Event Listeners
+    toggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleThemeMenu();
+    });
+
+    // Close when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!toggleBtn.contains(e.target) && !themeMenu.contains(e.target)) {
+        closeThemeMenu();
+      }
+    });
+
+    // Keyboard navigation within menu + 'T' shortcut to cycle
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && themeMenu.classList.contains("is-open")) {
+        closeThemeMenu();
+        toggleBtn.focus();
+        return;
+      }
+
+      // Quick toggle/cycle with 't' key when menu is closed
+      if ((e.key === "t" || e.key === "T") && !themeMenu.classList.contains("is-open")) {
+        const activeTag = document.activeElement ? document.activeElement.tagName : "";
+        if (activeTag !== "INPUT" && activeTag !== "TEXTAREA") {
+          e.preventDefault();
+          cycleTheme();
+          return;
+        }
+      }
+
+      if (!themeMenu.classList.contains("is-open")) return;
+
+      const items = Array.from(themeMenu.querySelectorAll(".theme-option"));
+      const currentIndex = items.indexOf(document.activeElement);
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const nextIndex = (currentIndex + 1) % items.length;
+        items[nextIndex].focus();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const prevIndex = (currentIndex - 1 + items.length) % items.length;
+        items[prevIndex].focus();
+      }
+    });
+
+    /* ==========================================================================
+       ANTIGRAVITY UI CURSOR SPOTLIGHT & 360-DEGREE RAY ROTATION ENGINE
+       ========================================================================== */
+    const visualPanel = document.querySelector(".visual-panel");
+    const cursorSpotlight = document.getElementById("cursorSpotlight");
+    let mouseActive = false;
+    let targetX = 500;
+    let targetY = 310;
+    let currentX = 500;
+    let currentY = 310;
+    let targetOp = 0;
+    let currentOp = 0;
+    let animFrameId = null;
+
+    let lastMouseX = 500;
+    let mouseDir = 1;
+
+    // Fast cached layout metrics - prevents layout thrashing & forced reflows on pointermove
+    let panelLeft = 0;
+    let panelTop = 0;
+    let panelWidth = 1000;
+    let panelHeight = 620;
+
+    function updatePanelMetrics() {
+      const r = visualPanel.getBoundingClientRect();
+      panelLeft = r.left;
+      panelTop = r.top;
+      panelWidth = r.width || 1000;
+      panelHeight = r.height || 620;
+    }
+
+    window.addEventListener("resize", updatePanelMetrics, { passive: true });
+    window.addEventListener("scroll", updatePanelMetrics, { passive: true });
+
+    // Distance from point to 2D line segment squared
+    function distToSegmentSquared(px, py, x1, y1, x2, y2) {
+      const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+      if (l2 === 0) return (px - x1) * (px - x1) + (py - y1) * (py - y1);
+      let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      const projX = x1 + t * (x2 - x1);
+      const projY = y1 + t * (y2 - y1);
+      return (px - projX) * (px - projX) + (py - projY) * (py - projY);
+    }
+
+    // Active looping rays set - only rays currently in motion are updated in rAF for 0% idle overhead
+    const activeLoopRays = new Set();
+
+    // Loop duration for one graceful, fluid 360-degree rotation (~920ms)
+    const RAY_LOOP_DURATION = 920;
+
+    // Trigger 360-degree rotation of the top part only (base x1, y1 strictly fixed at 500, 630)
+    function triggerRayLoop(ray, direction = 1) {
+      if (ray.isLooping) return;
+      const now = performance.now();
+      if (ray.lastLoopEndTime && (now - ray.lastLoopEndTime < 60)) return;
+
+      // Ensure dasharray is clear so full ray is visible during loop
+      ray.line.style.strokeDasharray = "none";
+      ray.line.style.strokeDashoffset = "0";
+
+      ray.isLooping = true;
+      ray.loopStartTime = now;
+      ray.loopDuration = RAY_LOOP_DURATION;
+      ray.loopDir = direction >= 0 ? 1 : -1;
+      activeLoopRays.add(ray);
+
+      if (!animFrameId) {
+        animFrameId = requestAnimationFrame(renderAnimationLoop);
+      }
+    }
+
+    visualPanel.addEventListener("pointerenter", (e) => {
+      updatePanelMetrics();
+      targetX = e.clientX - panelLeft;
+      targetY = e.clientY - panelTop;
+      currentX = targetX;
+      currentY = targetY;
+      lastMouseX = targetX;
+      targetOp = 1;
+      mouseActive = true;
+
+      if (!animFrameId) {
+        animFrameId = requestAnimationFrame(renderAnimationLoop);
+      }
+    }, { passive: true });
+
+    visualPanel.addEventListener("pointermove", (e) => {
+      // Ignore if pointer is over the theme toggle button or open menu
+      if (toggleBtn.contains(e.target) || themeMenu.contains(e.target)) {
+        targetOp = 0;
+        return;
+      }
+
+      const curX = e.clientX - panelLeft;
+      const curY = e.clientY - panelTop;
+
+      const deltaX = curX - lastMouseX;
+      if (Math.abs(deltaX) > 1) {
+        mouseDir = deltaX > 0 ? 1 : -1;
+      }
+      lastMouseX = curX;
+
+      targetX = curX;
+      targetY = curY;
+      targetOp = 1;
+      mouseActive = true;
+
+      // Project cursor into SVG viewBox coordinates (1000x620)
+      const svgX = (curX / panelWidth) * 1000;
+      const svgY = (curY / panelHeight) * 620;
+
+      // Trigger radius: 88 SVG units for smooth, responsive sweep across rays
+      const TRIGGER_RADIUS = 88;
+      const TRIGGER_RADIUS_SQ = TRIGGER_RADIUS * TRIGGER_RADIUS;
+
+      const count = rayDataList.length;
+      for (let i = 0; i < count; i++) {
+        const ray = rayDataList[i];
+        if (ray.isLooping) continue;
+
+        // Fast bounding box rejection
+        if (
+          svgX < ray.minX - TRIGGER_RADIUS ||
+          svgX > ray.maxX + TRIGGER_RADIUS ||
+          svgY < ray.minY - TRIGGER_RADIUS ||
+          svgY > ray.maxY + TRIGGER_RADIUS
+        ) {
+          continue;
+        }
+
+        const dSq = distToSegmentSquared(svgX, svgY, ORIGIN_X, ORIGIN_Y, ray.x2, ray.y2);
+        if (dSq < TRIGGER_RADIUS_SQ) {
+          triggerRayLoop(ray, mouseDir);
+        }
+      }
+
+      if (!animFrameId) {
+        animFrameId = requestAnimationFrame(renderAnimationLoop);
+      }
+    }, { passive: true });
+
+    visualPanel.addEventListener("pointerleave", () => {
+      targetOp = 0;
+      mouseActive = false;
+    });
+
+    function renderAnimationLoop(timestamp) {
+      // 1. Snappy, instantaneous cursor tracking for ambient spotlight
+      currentX += (targetX - currentX) * 0.72;
+      currentY += (targetY - currentY) * 0.72;
+      currentOp += (targetOp - currentOp) * 0.25;
+
+      if (cursorSpotlight) {
+        cursorSpotlight.style.transform = `translate3d(${currentX.toFixed(1)}px, ${currentY.toFixed(1)}px, 0)`;
+        cursorSpotlight.style.opacity = currentOp.toFixed(3);
+      }
+
+      // 2. Fixed-Base 360-degree Top Ray Rotation Engine
+      // Base (x1, y1) stays strictly pinned at (500, 630)
+      // Only (x2, y2) and dot (cx, cy) trace the full 360-degree closed orbit
+      if (activeLoopRays.size > 0) {
+        const now = timestamp || performance.now();
+        for (const ray of activeLoopRays) {
+          const elapsed = now - ray.loopStartTime;
+          const rawProgress = elapsed / ray.loopDuration;
+
+          if (rawProgress >= 1) {
+            // Loop finished: snap back to exact resting coordinates
+            ray.line.setAttribute("x2", ray.x2.toFixed(1));
+            ray.line.setAttribute("y2", ray.y2.toFixed(1));
+            ray.dot.setAttribute("cx", ray.x2.toFixed(1));
+            ray.dot.setAttribute("cy", ray.y2.toFixed(1));
+            ray.isLooping = false;
+            ray.lastLoopEndTime = now;
+            activeLoopRays.delete(ray);
+          } else {
+            // Smoothstep easing (0 to 1 with zero velocity at start and end)
+            const p = rawProgress * rawProgress * (3 - 2 * rawProgress);
+            const phi = 2 * Math.PI * p; // Full 360 degrees (0 to 2*PI)
+
+            // Closed elliptical displacement:
+            // dPerp: sideways swing perpendicular to ray
+            // dPara: longitudinal extension along ray axis
+            const dPerp = ray.loopDir * ray.A_perp * Math.sin(phi);
+            const dPara = ray.A_para * (1 - Math.cos(phi));
+
+            // Compute current top position (base stays strictly at ORIGIN_X, ORIGIN_Y)
+            const curX2 = ray.x2 + dPerp * ray.vx + dPara * ray.ux;
+            const curY2 = ray.y2 + dPerp * ray.vy + dPara * ray.uy;
+
+            ray.line.setAttribute("x2", curX2.toFixed(1));
+            ray.line.setAttribute("y2", curY2.toFixed(1));
+            ray.dot.setAttribute("cx", curX2.toFixed(1));
+            ray.dot.setAttribute("cy", curY2.toFixed(1));
+          }
+        }
+      }
+
+      // 3. Keep rAF active only while active rays or spotlight are animating
+      if (mouseActive || currentOp > 0.005 || activeLoopRays.size > 0) {
+        animFrameId = requestAnimationFrame(renderAnimationLoop);
+      } else {
+        currentOp = 0;
+        if (cursorSpotlight) cursorSpotlight.style.opacity = "0";
+        animFrameId = null;
+      }
+    }
+
+    // Panel click to trigger ripple pulse wave
+    visualPanel.addEventListener("click", (e) => {
+      if (toggleBtn.contains(e.target) || themeMenu.contains(e.target)) return;
+      visualPanel.classList.remove("pulse-active");
+      void visualPanel.offsetWidth;
+      visualPanel.classList.add("pulse-active");
+      setTimeout(() => visualPanel.classList.remove("pulse-active"), 1200);
+    });
+
+    /* ==========================================================================
+       INITIALIZATION
+       ========================================================================== */
+    window.addEventListener("DOMContentLoaded", () => {
+      updatePanelMetrics();
+      buildSunburst();
+      renderThemeMenu();
+
+      let initialTheme = "sunrise";
+      try {
+        const saved = localStorage.getItem("the-task-theme");
+        if (saved && THEMES.some(t => t.id === saved)) {
+          initialTheme = saved;
+        }
+      } catch (e) {}
+
+      initBackground(initialTheme);
+      applyTheme(initialTheme, true);
+    });
+  </script>
+</body>
+</html>
